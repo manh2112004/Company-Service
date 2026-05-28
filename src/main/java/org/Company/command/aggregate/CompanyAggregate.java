@@ -3,10 +3,12 @@ package org.Company.command.aggregate;
 import org.Company.command.command.ApproveCompanyCommand;
 import org.Company.command.command.CreateCompanyCommand;
 import org.Company.command.command.DeleteCompanyCommand;
+import org.Company.command.command.RejectCompanyCommand;
 import org.Company.command.command.UpdateCompanyCommand;
 import org.Company.command.event.CompanyApprovedEvent;
 import org.Company.command.event.CompanyCreatedEvent;
 import org.Company.command.event.CompanyDeletedEvent;
+import org.Company.command.event.CompanyRejectedEvent;
 import org.Company.command.event.CompanyUpdatedEvent;
 import org.axonframework.commandhandling.CommandHandler;
 import org.axonframework.eventsourcing.EventSourcingHandler;
@@ -76,6 +78,14 @@ public class CompanyAggregate {
         return "Duyệt công ty thành công";
     }
 
+    @CommandHandler
+    public String handle(RejectCompanyCommand command) {
+        AggregateLifecycle.apply(CompanyRejectedEvent.builder()
+                .id(command.getId())
+                .build());
+        return "Từ chối công ty thành công";
+    }
+
     @EventSourcingHandler
     public void on(CompanyCreatedEvent event) {
         this.id = event.getId();
@@ -93,6 +103,11 @@ public class CompanyAggregate {
 
     @EventSourcingHandler
     public void on(CompanyApprovedEvent event) {
+        this.id = event.getId();
+    }
+
+    @EventSourcingHandler
+    public void on(CompanyRejectedEvent event) {
         this.id = event.getId();
     }
 }

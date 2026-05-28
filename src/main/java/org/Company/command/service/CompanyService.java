@@ -14,4 +14,6 @@ public interface CompanyService {
     CompletableFuture<String> deleteCompany(String userId, String companyId);
 
     CompletableFuture<String> approveCompany(Jwt jwt, String companyId);
+
+    CompletableFuture<String> rejectCompany(Jwt jwt, String companyId);
 }

@@ -126,4 +126,18 @@ public class CompanyEventHandler {
         company.setUpdatedAt(LocalDateTime.now());
         companyRepository.save(company);
     }
+
+    @EventHandler
+    @Transactional
+    public void on(CompanyRejectedEvent event) {
+        Company company = companyRepository.findById(event.getId()).orElse(null);
+        if (company == null) {
+            return;
+        }
+
+        company.setStatus(CompanyStatus.REJECTED);
+        company.setVerified(false);
+        company.setUpdatedAt(LocalDateTime.now());
+        companyRepository.save(company);
+    }
 }

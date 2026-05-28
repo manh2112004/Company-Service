@@ -3,6 +3,7 @@ package org.Company.command.service.impl;
 import org.Company.command.command.ApproveCompanyCommand;
 import org.Company.command.command.CreateCompanyCommand;
 import org.Company.command.command.DeleteCompanyCommand;
+import org.Company.command.command.RejectCompanyCommand;
 import org.Company.command.command.UpdateCompanyCommand;
 import org.Company.command.data.Company;
 import org.Company.command.data.CompanyMemberRepository;
@@ -166,6 +167,35 @@ public class CompanyServiceImpl implements CompanyService {
         return commandGateway.send(command);
     }
 
+    @Override
+    public CompletableFuture<String> rejectCompany(Jwt jwt, String companyId) {
+        if (jwt == null || jwt.getSubject() == null || jwt.getSubject().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Không xác định được user từ token");
+        }
+
+        if (!hasAdminRole(jwt)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không có quyền từ chối công ty");
+        }
+
+        Company company = companyRepository.findById(companyId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Công ty không tồn tại"));
+
+        if (company.getStatus() == CompanyStatus.SUSPENDED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Không thể từ chối công ty đã bị khóa");
+        }
+        if (company.getStatus() == CompanyStatus.REJECTED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Công ty đã bị từ chối trước đó");
+        }
+        if (company.getStatus() == CompanyStatus.ACTIVE && Boolean.TRUE.equals(company.getVerified())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Công ty đã được duyệt, không thể từ chối");
+        }
+
+        RejectCompanyCommand command = RejectCompanyCommand.builder()
+                .id(companyId)
+                .build();
+        return commandGateway.send(command);
+    }
+
     private String trimToNull(String value) {
         if (value == null) {
             return null;
@@ -175,25 +205,29 @@ public class CompanyServiceImpl implements CompanyService {
     }
 
     private boolean hasAdminRole(Jwt jwt) {
-        if (hasRoleInRealmAccess(jwt, "ADMIN", "ROLE_ADMIN")) {
+        if (hasRoleInRealmAccess(jwt, "ADMIN", "ROLE_ADMIN", "COMPANY_ADMIN", "ROLE_COMPANY_ADMIN")) {
             return true;
         }
-        if (hasRoleInResourceAccess(jwt, "ADMIN", "ROLE_ADMIN")) {
+        if (hasRoleInResourceAccess(jwt, "ADMIN", "ROLE_ADMIN", "COMPANY_ADMIN", "ROLE_COMPANY_ADMIN")) {
             return true;
         }
-        if (containsRole(jwt.getClaim("authorities"), "ADMIN", "ROLE_ADMIN")) {
+        if (containsRole(jwt.getClaim("authorities"), "ADMIN", "ROLE_ADMIN", "COMPANY_ADMIN", "ROLE_COMPANY_ADMIN")) {
             return true;
         }
 
         String scope = jwt.getClaimAsString("scope");
         if (scope != null && Arrays.stream(scope.split("\\s+"))
                 .map(String::trim)
-                .anyMatch(s -> "admin".equalsIgnoreCase(s) || "role_admin".equalsIgnoreCase(s))) {
+                .anyMatch(s ->
+                        "admin".equalsIgnoreCase(s)
+                                || "role_admin".equalsIgnoreCase(s)
+                                || "company_admin".equalsIgnoreCase(s)
+                                || "role_company_admin".equalsIgnoreCase(s))) {
             return true;
         }
 
         Object scpClaim = jwt.getClaim("scp");
-        return containsRole(scpClaim, "admin", "role_admin");
+        return containsRole(scpClaim, "admin", "role_admin", "company_admin", "role_company_admin");
     }
 
     private boolean hasRoleInRealmAccess(Jwt jwt, String... expectedRoles) {
