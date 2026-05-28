@@ -1,5 +1,7 @@
 package org.Company.command.service.impl;
 
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 import org.Company.command.command.ApproveCompanyCommand;
 import org.Company.command.command.CreateCompanyCommand;
 import org.Company.command.command.DeleteCompanyCommand;
@@ -18,8 +20,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
@@ -37,6 +42,9 @@ public class CompanyServiceImpl implements CompanyService {
 
     @Autowired
     private CompanyMemberRepository companyMemberRepository;
+
+    @Autowired
+    private Cloudinary cloudinary;
 
     @Override
     public CompletableFuture<String> createCompany(String userId, CreateCompanyRequest request) {
@@ -196,12 +204,63 @@ public class CompanyServiceImpl implements CompanyService {
         return commandGateway.send(command);
     }
 
+    @Override
+    public CompletableFuture<String> uploadCompanyLogo(Jwt jwt, String companyId, MultipartFile file) {
+        if (jwt == null || jwt.getSubject() == null || jwt.getSubject().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Không xác định được user từ token");
+        }
+        if (file == null || file.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File logo không được để trống");
+        }
+        validateImageFile(file);
+
+        Company company = companyRepository.findById(companyId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Công ty không tồn tại"));
+
+        boolean isOwner = companyMemberRepository.existsByCompanyIdAndUserIdAndRoleAndActiveTrue(
+                companyId, jwt.getSubject(), CompanyMemberRole.OWNER
+        );
+        if (!isOwner && !hasAdminRole(jwt)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không có quyền cập nhật logo công ty này");
+        }
+
+        String logoUrl = uploadImage(file, "company-service/logos", "Upload logo công ty thất bại");
+        company.setLogoUrl(logoUrl);
+        company.setUpdatedAt(LocalDateTime.now());
+        companyRepository.save(company);
+
+        return CompletableFuture.completedFuture(logoUrl);
+    }
+
     private String trimToNull(String value) {
         if (value == null) {
             return null;
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private String uploadImage(MultipartFile file, String folder, String errorMessage) {
+        try {
+            Map<?, ?> result = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.asMap(
+                    "folder", folder,
+                    "resource_type", "image"
+            ));
+            Object secureUrl = result.get("secure_url");
+            if (secureUrl == null) {
+                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Cloudinary không trả về URL ảnh");
+            }
+            return secureUrl.toString();
+        } catch (IOException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, errorMessage, e);
+        }
+    }
+
+    private void validateImageFile(MultipartFile file) {
+        String contentType = file.getContentType();
+        if (contentType == null || !contentType.startsWith("image/")) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File upload phải là hình ảnh");
+        }
     }
 
     private boolean hasAdminRole(Jwt jwt) {

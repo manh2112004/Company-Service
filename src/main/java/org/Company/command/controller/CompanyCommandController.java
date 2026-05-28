@@ -7,6 +7,7 @@ import org.Company.command.service.CompanyService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -14,6 +15,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -61,5 +64,14 @@ public class CompanyCommandController {
             @PathVariable String companyId
     ) {
         return companyService.rejectCompany(jwt, companyId);
+    }
+
+    @PostMapping(value = "/{companyId}/logo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public CompletableFuture<String> uploadCompanyLogo(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable String companyId,
+            @RequestParam("file") MultipartFile file
+    ) {
+        return companyService.uploadCompanyLogo(jwt, companyId, file);
     }
 }
