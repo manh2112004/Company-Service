@@ -1,14 +1,13 @@
 package org.Company.query.controller;
 
 import org.Company.query.model.response.CompanyResponse;
+import org.Company.query.model.response.CompanyPageResponse;
+import org.Company.query.queries.GetCompaniesQuery;
 import org.Company.query.queries.GetCompanyByIdQuery;
 import org.axonframework.messaging.responsetypes.ResponseTypes;
 import org.axonframework.queryhandling.QueryGateway;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -23,6 +22,19 @@ public class CompanyQueryController {
         return queryGateway.query(
                 new GetCompanyByIdQuery(companyId),
                 ResponseTypes.instanceOf(CompanyResponse.class)
+        );
+    }
+    @GetMapping
+    public CompletableFuture<CompanyPageResponse> getCompanies(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String industry
+    ) {
+        GetCompaniesQuery query = new GetCompaniesQuery(page, size, keyword, industry);
+        return queryGateway.query(
+                query,
+                ResponseTypes.instanceOf(CompanyPageResponse.class)
         );
     }
 }
