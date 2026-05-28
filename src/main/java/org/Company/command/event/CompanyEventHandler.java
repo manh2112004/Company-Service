@@ -5,6 +5,7 @@ import org.Company.command.data.CompanyMember;
 import org.Company.command.data.CompanyMemberRepository;
 import org.Company.command.data.CompanyRepository;
 import org.Company.constant.CompanyMemberRole;
+import org.Company.constant.CompanyStatus;
 import org.axonframework.eventhandling.EventHandler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -54,5 +55,61 @@ public class CompanyEventHandler {
                     .build();
             companyMemberRepository.save(owner);
         }
+    }
+
+    @EventHandler
+    @Transactional
+    public void on(CompanyUpdatedEvent event) {
+        Company company = companyRepository.findById(event.getId()).orElse(null);
+        if (company == null) {
+            return;
+        }
+
+        if (event.getCompanyName() != null) {
+            company.setCompanyName(event.getCompanyName());
+        }
+        if (event.getLogoUrl() != null) {
+            company.setLogoUrl(event.getLogoUrl());
+        }
+        if (event.getDescription() != null) {
+            company.setDescription(event.getDescription());
+        }
+        if (event.getWebsite() != null) {
+            company.setWebsite(event.getWebsite());
+        }
+        if (event.getIndustry() != null) {
+            company.setIndustry(event.getIndustry());
+        }
+        if (event.getCompanySize() != null) {
+            company.setCompanySize(event.getCompanySize());
+        }
+        if (event.getFoundedYear() != null) {
+            company.setFoundedYear(event.getFoundedYear());
+        }
+        if (event.getEmail() != null) {
+            company.setEmail(event.getEmail());
+        }
+        if (event.getPhoneNumber() != null) {
+            company.setPhoneNumber(event.getPhoneNumber());
+        }
+        if (event.getTaxCode() != null) {
+            company.setTaxCode(event.getTaxCode());
+        }
+
+        company.setUpdatedAt(LocalDateTime.now());
+        companyRepository.save(company);
+    }
+
+    @EventHandler
+    @Transactional
+    public void on(CompanyDeletedEvent event) {
+        Company company = companyRepository.findById(event.getId()).orElse(null);
+        if (company == null) {
+            return;
+        }
+
+        company.setStatus(CompanyStatus.SUSPENDED);
+        company.setUpdatedAt(LocalDateTime.now());
+        companyRepository.save(company);
     }
 }
