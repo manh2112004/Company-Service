@@ -24,6 +24,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
+import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collection;
@@ -232,6 +233,34 @@ public class CompanyServiceImpl implements CompanyService {
         return CompletableFuture.completedFuture(logoUrl);
     }
 
+    @Override
+    public CompletableFuture<String> deleteCompanyLogo(Jwt jwt, String companyId) {
+        if (jwt == null || jwt.getSubject() == null || jwt.getSubject().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Không xác định được user từ token");
+        }
+
+        Company company = companyRepository.findById(companyId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Công ty không tồn tại"));
+
+        boolean isOwner = companyMemberRepository.existsByCompanyIdAndUserIdAndRoleAndActiveTrue(
+                companyId, jwt.getSubject(), CompanyMemberRole.OWNER
+        );
+        if (!isOwner && !hasAdminRole(jwt)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không có quyền xóa logo công ty này");
+        }
+
+        if (company.getLogoUrl() == null || company.getLogoUrl().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Công ty chưa có logo để xóa");
+        }
+
+        deleteImageIfPossible(company.getLogoUrl(), "Xóa logo trên Cloudinary thất bại");
+        company.setLogoUrl(null);
+        company.setUpdatedAt(LocalDateTime.now());
+        companyRepository.save(company);
+
+        return CompletableFuture.completedFuture("Xóa logo công ty thành công");
+    }
+
     private String trimToNull(String value) {
         if (value == null) {
             return null;
@@ -260,6 +289,44 @@ public class CompanyServiceImpl implements CompanyService {
         String contentType = file.getContentType();
         if (contentType == null || !contentType.startsWith("image/")) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "File upload phải là hình ảnh");
+        }
+    }
+
+    private void deleteImageIfPossible(String imageUrl, String errorMessage) {
+        String publicId = extractCloudinaryPublicId(imageUrl);
+        if (publicId == null) {
+            return;
+        }
+
+        try {
+            cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap());
+        } catch (IOException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, errorMessage, e);
+        }
+    }
+
+    private String extractCloudinaryPublicId(String imageUrl) {
+        if (imageUrl == null || imageUrl.isBlank()) {
+            return null;
+        }
+
+        try {
+            String path = URI.create(imageUrl).getPath();
+            String marker = "/upload/";
+            int uploadIndex = path.indexOf(marker);
+            if (uploadIndex < 0) {
+                return null;
+            }
+
+            String publicPath = path.substring(uploadIndex + marker.length());
+            publicPath = publicPath.replaceFirst("^v\\d+/", "");
+            int extensionIndex = publicPath.lastIndexOf('.');
+            if (extensionIndex > 0) {
+                publicPath = publicPath.substring(0, extensionIndex);
+            }
+            return publicPath.isBlank() ? null : publicPath;
+        } catch (IllegalArgumentException e) {
+            return null;
         }
     }
 

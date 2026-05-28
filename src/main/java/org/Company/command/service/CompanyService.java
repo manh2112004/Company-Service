@@ -19,4 +19,6 @@ public interface CompanyService {
     CompletableFuture<String> rejectCompany(Jwt jwt, String companyId);
 
     CompletableFuture<String> uploadCompanyLogo(Jwt jwt, String companyId, MultipartFile file);
+
+    CompletableFuture<String> deleteCompanyLogo(Jwt jwt, String companyId);
 }

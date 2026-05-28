@@ -74,4 +74,12 @@ public class CompanyCommandController {
     ) {
         return companyService.uploadCompanyLogo(jwt, companyId, file);
     }
+
+    @DeleteMapping("/{companyId}/logo")
+    public CompletableFuture<String> deleteCompanyLogo(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable String companyId
+    ) {
+        return companyService.deleteCompanyLogo(jwt, companyId);
+    }
 }
