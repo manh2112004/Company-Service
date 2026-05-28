@@ -2,6 +2,7 @@ package org.Company.command.service;
 
 import org.Company.command.model.request.CreateCompanyRequest;
 import org.Company.command.model.request.UpdateCompanyRequest;
+import org.springframework.security.oauth2.jwt.Jwt;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -11,4 +12,6 @@ public interface CompanyService {
     CompletableFuture<String> updateCompany(String userId, String companyId, UpdateCompanyRequest request);
 
     CompletableFuture<String> deleteCompany(String userId, String companyId);
+
+    CompletableFuture<String> approveCompany(Jwt jwt, String companyId);
 }

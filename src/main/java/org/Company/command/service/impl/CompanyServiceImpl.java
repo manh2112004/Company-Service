@@ -1,5 +1,6 @@
 package org.Company.command.service.impl;
 
+import org.Company.command.command.ApproveCompanyCommand;
 import org.Company.command.command.CreateCompanyCommand;
 import org.Company.command.command.DeleteCompanyCommand;
 import org.Company.command.command.UpdateCompanyCommand;
@@ -14,9 +15,14 @@ import org.Company.constant.CompanyStatus;
 import org.axonframework.commandhandling.gateway.CommandGateway;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -134,11 +140,108 @@ public class CompanyServiceImpl implements CompanyService {
         return commandGateway.send(command);
     }
 
+    @Override
+    public CompletableFuture<String> approveCompany(Jwt jwt, String companyId) {
+        if (jwt == null || jwt.getSubject() == null || jwt.getSubject().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Không xác định được user từ token");
+        }
+
+        if (!hasAdminRole(jwt)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không có quyền duyệt công ty");
+        }
+
+        Company company = companyRepository.findById(companyId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Công ty không tồn tại"));
+
+        if (company.getStatus() == CompanyStatus.SUSPENDED) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Không thể duyệt công ty đã bị khóa");
+        }
+        if (company.getStatus() == CompanyStatus.ACTIVE && Boolean.TRUE.equals(company.getVerified())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Công ty đã được duyệt");
+        }
+
+        ApproveCompanyCommand command = ApproveCompanyCommand.builder()
+                .id(companyId)
+                .build();
+        return commandGateway.send(command);
+    }
+
     private String trimToNull(String value) {
         if (value == null) {
             return null;
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private boolean hasAdminRole(Jwt jwt) {
+        if (hasRoleInRealmAccess(jwt, "ADMIN", "ROLE_ADMIN")) {
+            return true;
+        }
+        if (hasRoleInResourceAccess(jwt, "ADMIN", "ROLE_ADMIN")) {
+            return true;
+        }
+        if (containsRole(jwt.getClaim("authorities"), "ADMIN", "ROLE_ADMIN")) {
+            return true;
+        }
+
+        String scope = jwt.getClaimAsString("scope");
+        if (scope != null && Arrays.stream(scope.split("\\s+"))
+                .map(String::trim)
+                .anyMatch(s -> "admin".equalsIgnoreCase(s) || "role_admin".equalsIgnoreCase(s))) {
+            return true;
+        }
+
+        Object scpClaim = jwt.getClaim("scp");
+        return containsRole(scpClaim, "admin", "role_admin");
+    }
+
+    private boolean hasRoleInRealmAccess(Jwt jwt, String... expectedRoles) {
+        Object realmAccess = jwt.getClaim("realm_access");
+        if (!(realmAccess instanceof Map<?, ?> realmMap)) {
+            return false;
+        }
+        return containsRole(realmMap.get("roles"), expectedRoles);
+    }
+
+    private boolean hasRoleInResourceAccess(Jwt jwt, String... expectedRoles) {
+        Object resourceAccess = jwt.getClaim("resource_access");
+        if (!(resourceAccess instanceof Map<?, ?> resourceMap)) {
+            return false;
+        }
+
+        String preferredClient = jwt.getClaimAsString("azp");
+        if (preferredClient != null) {
+            Object clientAccess = resourceMap.get(preferredClient);
+            if (containsRole(clientAccess, expectedRoles)) {
+                return true;
+            }
+        }
+
+        return resourceMap.values().stream().anyMatch(value -> containsRole(value, expectedRoles));
+    }
+
+    private boolean containsRole(Object claimValue, String... expectedRoles) {
+        Set<String> expected = Arrays.stream(expectedRoles)
+                .map(String::toLowerCase)
+                .collect(java.util.stream.Collectors.toSet());
+
+        if (claimValue instanceof Collection<?> roles) {
+            return roles.stream()
+                    .filter(String.class::isInstance)
+                    .map(String.class::cast)
+                    .map(String::toLowerCase)
+                    .anyMatch(expected::contains);
+        }
+
+        if (claimValue instanceof Map<?, ?> mapClaim) {
+            Object directRoles = mapClaim.get("roles");
+            if (containsRole(directRoles, expectedRoles)) {
+                return true;
+            }
+            return mapClaim.values().stream().anyMatch(v -> containsRole(v, expectedRoles));
+        }
+
+        return false;
     }
 }

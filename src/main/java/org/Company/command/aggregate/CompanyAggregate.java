@@ -1,8 +1,10 @@
 package org.Company.command.aggregate;
 
+import org.Company.command.command.ApproveCompanyCommand;
 import org.Company.command.command.CreateCompanyCommand;
 import org.Company.command.command.DeleteCompanyCommand;
 import org.Company.command.command.UpdateCompanyCommand;
+import org.Company.command.event.CompanyApprovedEvent;
 import org.Company.command.event.CompanyCreatedEvent;
 import org.Company.command.event.CompanyDeletedEvent;
 import org.Company.command.event.CompanyUpdatedEvent;
@@ -66,6 +68,14 @@ public class CompanyAggregate {
         return "Xóa công ty thành công";
     }
 
+    @CommandHandler
+    public String handle(ApproveCompanyCommand command) {
+        AggregateLifecycle.apply(CompanyApprovedEvent.builder()
+                .id(command.getId())
+                .build());
+        return "Duyệt công ty thành công";
+    }
+
     @EventSourcingHandler
     public void on(CompanyCreatedEvent event) {
         this.id = event.getId();
@@ -78,6 +88,11 @@ public class CompanyAggregate {
 
     @EventSourcingHandler
     public void on(CompanyDeletedEvent event) {
+        this.id = event.getId();
+    }
+
+    @EventSourcingHandler
+    public void on(CompanyApprovedEvent event) {
         this.id = event.getId();
     }
 }

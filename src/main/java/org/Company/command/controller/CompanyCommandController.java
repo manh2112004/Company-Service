@@ -47,4 +47,12 @@ public class CompanyCommandController {
     ) {
         return companyService.deleteCompany(jwt.getSubject(), companyId);
     }
+
+    @PutMapping("/{companyId}/approve")
+    public CompletableFuture<String> approveCompany(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable String companyId
+    ) {
+        return companyService.approveCompany(jwt, companyId);
+    }
 }
