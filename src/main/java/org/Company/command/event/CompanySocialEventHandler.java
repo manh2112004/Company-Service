@@ -24,4 +24,16 @@ public class CompanySocialEventHandler {
                 .build();
         companySocialRepository.save(social);
     }
+
+    @EventHandler
+    @Transactional
+    public void on(CompanySocialUpdatedEvent event) {
+        CompanySocial social = companySocialRepository.findById(event.getSocialId()).orElse(null);
+        if (social == null) {
+            return;
+        }
+        social.setPlatform(event.getPlatform());
+        social.setUrl(event.getUrl());
+        companySocialRepository.save(social);
+    }
 }

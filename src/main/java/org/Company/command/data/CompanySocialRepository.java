@@ -12,5 +12,7 @@ public interface CompanySocialRepository extends JpaRepository<CompanySocial, St
 
     boolean existsByCompanyIdAndPlatform(String companyId, SocialPlatform platform);
 
+    boolean existsByCompanyIdAndPlatformAndIdNot(String companyId, SocialPlatform platform, String id);
+
     Optional<CompanySocial> findByIdAndCompanyId(String id, String companyId);
 }
