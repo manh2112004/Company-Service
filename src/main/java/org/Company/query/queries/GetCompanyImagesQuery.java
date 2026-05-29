@@ -1,0 +1,14 @@
+package org.Company.query.queries;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+public class GetCompanyImagesQuery {
+    private String companyId;
+}
