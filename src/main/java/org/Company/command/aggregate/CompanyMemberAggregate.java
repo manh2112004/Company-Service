@@ -2,8 +2,10 @@ package org.Company.command.aggregate;
 
 import org.Company.command.command.AddCompanyMemberCommand;
 import org.Company.command.command.UpdateCompanyMemberRoleCommand;
+import org.Company.command.command.DeleteCompanyMemberCommand;
 import org.Company.command.event.CompanyMemberAddedEvent;
 import org.Company.command.event.CompanyMemberRoleUpdatedEvent;
+import org.Company.command.event.CompanyMemberDeletedEvent;
 import org.Company.constant.CompanyMemberRole;
 import org.axonframework.commandhandling.CommandHandler;
 import org.axonframework.eventsourcing.EventSourcingHandler;
@@ -54,6 +56,20 @@ public class CompanyMemberAggregate {
     @EventSourcingHandler
     public void on(CompanyMemberRoleUpdatedEvent event) {
         this.role = event.getRole();
+    }
+
+    @CommandHandler
+    public String handle(DeleteCompanyMemberCommand command) {
+        AggregateLifecycle.apply(CompanyMemberDeletedEvent.builder()
+                .memberId(command.getMemberId())
+                .companyId(command.getCompanyId())
+                .build());
+        return "Xóa thành viên công ty thành công";
+    }
+
+    @EventSourcingHandler
+    public void on(CompanyMemberDeletedEvent event) {
+        AggregateLifecycle.markDeleted();
     }
 }
 

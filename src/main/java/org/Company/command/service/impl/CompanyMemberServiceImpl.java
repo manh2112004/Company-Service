@@ -2,6 +2,8 @@ package org.Company.command.service.impl;
 
 import org.Company.command.command.AddCompanyMemberCommand;
 import org.Company.command.command.UpdateCompanyMemberRoleCommand;
+import org.Company.command.command.DeleteCompanyMemberCommand;
+import org.Company.command.data.CompanyMember;
 import org.Company.command.data.CompanyMemberRepository;
 import org.Company.command.data.CompanyRepository;
 import org.Company.command.model.request.CreateCompanyMemberRequest;
@@ -82,6 +84,37 @@ public class CompanyMemberServiceImpl implements CompanyMemberService {
                 .companyId(companyId)
                 .memberId(memberId)
                 .role(request.getRole())
+                .build();
+
+        return commandGateway.send(command);
+    }
+
+    @Override
+    public CompletableFuture<String> deleteMember(String userId, String companyId, String memberId) {
+        if (userId == null || userId.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Không xác định được user từ token");
+        }
+
+        companyRepository.findById(companyId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Công ty không tồn tại"));
+
+        boolean isOwner = companyMemberRepository.existsByCompanyIdAndUserIdAndRoleAndActiveTrue(
+                companyId, userId, CompanyMemberRole.OWNER
+        );
+        if (!isOwner) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không có quyền xóa thành viên khỏi công ty");
+        }
+
+        CompanyMember member = companyMemberRepository.findByCompanyIdAndId(companyId, memberId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Thành viên không tồn tại trong công ty"));
+
+        if (CompanyMemberRole.OWNER.equals(member.getRole())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Không thể xóa chủ sở hữu khỏi công ty");
+        }
+
+        DeleteCompanyMemberCommand command = DeleteCompanyMemberCommand.builder()
+                .companyId(companyId)
+                .memberId(memberId)
                 .build();
 
         return commandGateway.send(command);

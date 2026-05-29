@@ -36,5 +36,13 @@ public class CompanyMemberEventHandler {
         member.setRole(event.getRole());
         companyMemberRepository.save(member);
     }
+
+    @EventHandler
+    @Transactional
+    public void on(CompanyMemberDeletedEvent event) {
+        CompanyMember member = companyMemberRepository.findByCompanyIdAndId(event.getCompanyId(), event.getMemberId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Thành viên không tồn tại"));
+        companyMemberRepository.delete(member);
+    }
 }
 

@@ -7,6 +7,7 @@ import org.Company.command.service.CompanyMemberService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -40,6 +41,15 @@ public class CompanyMemberCommandController {
             @Valid @RequestBody UpdateCompanyMemberRoleRequest request
     ) {
         return companyMemberService.updateMemberRole(jwt.getSubject(), companyId, memberId, request);
+    }
+
+    @DeleteMapping("/{companyId}/members/{memberId}")
+    public CompletableFuture<String> deleteMember(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable String companyId,
+            @PathVariable String memberId
+    ) {
+        return companyMemberService.deleteMember(jwt.getSubject(), companyId, memberId);
     }
 }
 

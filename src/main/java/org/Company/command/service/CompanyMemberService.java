@@ -10,5 +10,7 @@ public interface CompanyMemberService {
     CompletableFuture<String> addMember(String userId, String companyId, CreateCompanyMemberRequest request);
 
     CompletableFuture<String> updateMemberRole(String userId, String companyId, String memberId, UpdateCompanyMemberRoleRequest request);
+
+    CompletableFuture<String> deleteMember(String userId, String companyId, String memberId);
 }
 
