@@ -14,5 +14,7 @@ public interface CompanyMemberRepository extends JpaRepository<CompanyMember, St
     boolean existsByCompanyIdAndUserIdAndRoleAndActiveTrue(String companyId, String userId, CompanyMemberRole role);
 
     Optional<CompanyMember> findByCompanyIdAndId(String companyId, String id);
+
+    Optional<CompanyMember> findByCompanyIdAndUserId(String companyId, String userId);
 }
 

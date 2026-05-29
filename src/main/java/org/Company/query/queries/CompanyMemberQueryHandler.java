@@ -50,6 +50,18 @@ public class CompanyMemberQueryHandler {
         return mapToResponse(member);
     }
 
+    @QueryHandler
+    @Transactional(readOnly = true)
+    public CompanyMemberResponse handle(GetCompanyMemberByUserIdQuery query) {
+        companyRepository.findById(query.getCompanyId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Công ty không tồn tại"));
+
+        CompanyMember member = companyMemberRepository.findByCompanyIdAndUserId(query.getCompanyId(), query.getUserId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Thành viên không tồn tại trong công ty"));
+
+        return mapToResponse(member);
+    }
+
     private CompanyMemberResponse mapToResponse(CompanyMember member) {
         return CompanyMemberResponse.builder()
                 .id(member.getId())
