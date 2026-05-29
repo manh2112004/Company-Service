@@ -1,10 +1,13 @@
 package org.Company.command.service.impl;
 
 import org.Company.command.command.AddCompanyAddressCommand;
+import org.Company.command.command.UpdateCompanyAddressCommand;
+import org.Company.command.data.CompanyAddress;
 import org.Company.command.data.CompanyAddressRepository;
 import org.Company.command.data.CompanyMemberRepository;
 import org.Company.command.data.CompanyRepository;
 import org.Company.command.model.request.CreateCompanyAddressRequest;
+import org.Company.command.model.request.UpdateCompanyAddressRequest;
 import org.Company.command.service.CompanyAddressService;
 import org.Company.constant.CompanyMemberRole;
 import org.axonframework.commandhandling.gateway.CommandGateway;
@@ -55,6 +58,44 @@ public class CompanyAddressServiceImpl implements CompanyAddressService {
         AddCompanyAddressCommand command = AddCompanyAddressCommand.builder()
                 .companyId(companyId)
                 .addressId(UUID.randomUUID().toString())
+                .country(request.getCountry())
+                .province(trimToNull(request.getProvince()))
+                .district(trimToNull(request.getDistrict()))
+                .ward(trimToNull(request.getWard()))
+                .addressLine(trimToNull(request.getAddressLine()))
+                .headQuarter(Boolean.TRUE.equals(request.getHeadQuarter()))
+                .build();
+
+        return commandGateway.send(command);
+    }
+
+    @Override
+    public CompletableFuture<String> updateAddress(String userId, String companyId, String addressId, UpdateCompanyAddressRequest request) {
+        if (userId == null || userId.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Không xác định được user từ token");
+        }
+
+        companyRepository.findById(companyId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Công ty không tồn tại"));
+
+        boolean isOwner = companyMemberRepository.existsByCompanyIdAndUserIdAndRoleAndActiveTrue(
+                companyId, userId, CompanyMemberRole.OWNER
+        );
+        if (!isOwner) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không có quyền sửa địa chỉ cho công ty này");
+        }
+
+        companyAddressRepository.findByIdAndCompanyId(addressId, companyId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Địa chỉ không tồn tại hoặc không thuộc công ty này"));
+
+        if (Boolean.TRUE.equals(request.getHeadQuarter())
+                && companyAddressRepository.existsByCompanyIdAndHeadQuarterTrueAndIdNot(companyId, addressId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Công ty đã có trụ sở chính, không thể đặt địa chỉ này làm trụ sở chính");
+        }
+
+        UpdateCompanyAddressCommand command = UpdateCompanyAddressCommand.builder()
+                .companyId(companyId)
+                .addressId(addressId)
                 .country(request.getCountry())
                 .province(trimToNull(request.getProvince()))
                 .district(trimToNull(request.getDistrict()))

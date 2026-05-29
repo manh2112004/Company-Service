@@ -9,6 +9,8 @@ public interface CompanyAddressRepository extends JpaRepository<CompanyAddress, 
 
     boolean existsByCompanyIdAndHeadQuarterTrue(String companyId);
 
+    boolean existsByCompanyIdAndHeadQuarterTrueAndIdNot(String companyId, String id);
+
     List<CompanyAddress> findAllByCompanyId(String companyId);
 
     Optional<CompanyAddress> findByIdAndCompanyId(String id, String companyId);

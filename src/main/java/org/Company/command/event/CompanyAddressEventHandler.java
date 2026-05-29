@@ -28,4 +28,20 @@ public class CompanyAddressEventHandler {
                 .build();
         companyAddressRepository.save(address);
     }
+
+    @EventHandler
+    @Transactional
+    public void on(CompanyAddressUpdatedEvent event) {
+        CompanyAddress address = companyAddressRepository.findById(event.getAddressId()).orElse(null);
+        if (address == null) {
+            return;
+        }
+        address.setCountry(event.getCountry());
+        address.setProvince(event.getProvince());
+        address.setDistrict(event.getDistrict());
+        address.setWard(event.getWard());
+        address.setAddressLine(event.getAddressLine());
+        address.setHeadQuarter(event.getHeadQuarter());
+        companyAddressRepository.save(address);
+    }
 }
