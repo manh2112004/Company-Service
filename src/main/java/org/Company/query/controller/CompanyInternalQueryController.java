@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.concurrent.CompletableFuture;
 
+import org.Company.constant.CompanyStatus;
 @RestController
 @RequestMapping("/internal/companies")
 public class CompanyInternalQueryController {
@@ -38,5 +39,13 @@ public class CompanyInternalQueryController {
                 new GetCompanyMemberByUserIdQuery(companyId, userId),
                 ResponseTypes.instanceOf(CompanyMemberResponse.class)
         );
+    }
+
+    @GetMapping("/{companyId}/active")
+    public CompletableFuture<CompanyStatus> getCompanyActive(@PathVariable String companyId) {
+        return queryGateway.query(
+                new GetCompanyByIdQuery(companyId),
+                ResponseTypes.instanceOf(CompanyResponse.class)
+        ).thenApply(CompanyResponse::getStatus);
     }
 }
