@@ -9,4 +9,6 @@ public interface CompanyBenefitService {
     CompletableFuture<String> addBenefit(String userId, String companyId, CreateCompanyBenefitRequest request);
 
     CompletableFuture<String> updateBenefit(String userId, String companyId, String benefitId, UpdateCompanyBenefitRequest request);
+
+    CompletableFuture<String> deleteBenefit(String userId, String companyId, String benefitId);
 }

@@ -2,6 +2,7 @@ package org.Company.command.service.impl;
 
 import org.Company.command.command.AddCompanyBenefitCommand;
 import org.Company.command.command.UpdateCompanyBenefitCommand;
+import org.Company.command.command.DeleteCompanyBenefitCommand;
 import org.Company.command.data.CompanyBenefit;
 import org.Company.command.data.CompanyMemberRepository;
 import org.Company.command.data.CompanyRepository;
@@ -92,6 +93,33 @@ public class CompanyBenefitServiceImpl implements CompanyBenefitService {
                 .companyId(companyId)
                 .benefitId(benefitId)
                 .benefitName(benefitName)
+                .build();
+
+        return commandGateway.send(command);
+    }
+
+    @Override
+    public CompletableFuture<String> deleteBenefit(String userId, String companyId, String benefitId) {
+        if (userId == null || userId.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Không xác định được user từ token");
+        }
+
+        companyRepository.findById(companyId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Công ty không tồn tại"));
+
+        boolean isOwner = companyMemberRepository.existsByCompanyIdAndUserIdAndRoleAndActiveTrue(
+                companyId, userId, CompanyMemberRole.OWNER
+        );
+        if (!isOwner) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không có quyền xóa phúc lợi của công ty này");
+        }
+
+        companyBenefitRepository.findByIdAndCompanyId(benefitId, companyId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Phúc lợi không tồn tại hoặc không thuộc công ty này"));
+
+        DeleteCompanyBenefitCommand command = DeleteCompanyBenefitCommand.builder()
+                .companyId(companyId)
+                .benefitId(benefitId)
                 .build();
 
         return commandGateway.send(command);

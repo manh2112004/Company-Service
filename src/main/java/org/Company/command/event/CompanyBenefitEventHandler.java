@@ -34,4 +34,10 @@ public class CompanyBenefitEventHandler {
         benefit.setBenefitName(event.getBenefitName());
         companyBenefitRepository.save(benefit);
     }
+
+    @EventHandler
+    @Transactional
+    public void on(CompanyBenefitDeletedEvent event) {
+        companyBenefitRepository.deleteById(event.getBenefitId());
+    }
 }

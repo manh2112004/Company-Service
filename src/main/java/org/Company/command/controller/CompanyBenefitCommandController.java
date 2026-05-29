@@ -7,6 +7,7 @@ import org.Company.command.service.CompanyBenefitService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -40,5 +41,14 @@ public class CompanyBenefitCommandController {
             @Valid @RequestBody UpdateCompanyBenefitRequest request
     ) {
         return companyBenefitService.updateBenefit(jwt.getSubject(), companyId, benefitId, request);
+    }
+
+    @DeleteMapping("/{companyId}/benefits/{benefitId}")
+    public CompletableFuture<String> deleteBenefit(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable String companyId,
+            @PathVariable String benefitId
+    ) {
+        return companyBenefitService.deleteBenefit(jwt.getSubject(), companyId, benefitId);
     }
 }

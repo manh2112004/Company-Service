@@ -2,8 +2,10 @@ package org.Company.command.aggregate;
 
 import org.Company.command.command.AddCompanyBenefitCommand;
 import org.Company.command.command.UpdateCompanyBenefitCommand;
+import org.Company.command.command.DeleteCompanyBenefitCommand;
 import org.Company.command.event.CompanyBenefitAddedEvent;
 import org.Company.command.event.CompanyBenefitUpdatedEvent;
+import org.Company.command.event.CompanyBenefitDeletedEvent;
 import org.axonframework.commandhandling.CommandHandler;
 import org.axonframework.eventsourcing.EventSourcingHandler;
 import org.axonframework.modelling.command.AggregateIdentifier;
@@ -46,9 +48,23 @@ public class CompanyBenefitAggregate {
         this.companyId = event.getCompanyId();
     }
 
+    @CommandHandler
+    public String handle(DeleteCompanyBenefitCommand command) {
+        AggregateLifecycle.apply(CompanyBenefitDeletedEvent.builder()
+                .benefitId(command.getBenefitId())
+                .companyId(command.getCompanyId())
+                .build());
+        return "Xóa phúc lợi công ty thành công";
+    }
+
     @EventSourcingHandler
     public void on(CompanyBenefitUpdatedEvent event) {
         this.benefitId = event.getBenefitId();
         this.companyId = event.getCompanyId();
+    }
+
+    @EventSourcingHandler
+    public void on(CompanyBenefitDeletedEvent event) {
+        AggregateLifecycle.markDeleted();
     }
 }
