@@ -9,4 +9,8 @@ public interface CompanyBenefitRepository extends JpaRepository<CompanyBenefit, 
     List<CompanyBenefit> findAllByCompanyId(String companyId);
 
     boolean existsByCompanyIdAndBenefitName(String companyId, String benefitName);
+
+    boolean existsByCompanyIdAndBenefitNameAndIdNot(String companyId, String benefitName, String id);
+
+    Optional<CompanyBenefit> findByIdAndCompanyId(String id, String companyId);
 }

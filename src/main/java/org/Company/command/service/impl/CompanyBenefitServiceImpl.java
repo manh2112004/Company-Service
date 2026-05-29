@@ -1,10 +1,13 @@
 package org.Company.command.service.impl;
 
 import org.Company.command.command.AddCompanyBenefitCommand;
+import org.Company.command.command.UpdateCompanyBenefitCommand;
+import org.Company.command.data.CompanyBenefit;
 import org.Company.command.data.CompanyMemberRepository;
 import org.Company.command.data.CompanyRepository;
 import org.Company.command.data.CompanyBenefitRepository;
 import org.Company.command.model.request.CreateCompanyBenefitRequest;
+import org.Company.command.model.request.UpdateCompanyBenefitRequest;
 import org.Company.command.service.CompanyBenefitService;
 import org.Company.constant.CompanyMemberRole;
 import org.axonframework.commandhandling.gateway.CommandGateway;
@@ -55,6 +58,39 @@ public class CompanyBenefitServiceImpl implements CompanyBenefitService {
         AddCompanyBenefitCommand command = AddCompanyBenefitCommand.builder()
                 .companyId(companyId)
                 .benefitId(UUID.randomUUID().toString())
+                .benefitName(benefitName)
+                .build();
+
+        return commandGateway.send(command);
+    }
+
+    @Override
+    public CompletableFuture<String> updateBenefit(String userId, String companyId, String benefitId, UpdateCompanyBenefitRequest request) {
+        if (userId == null || userId.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Không xác định được user từ token");
+        }
+
+        companyRepository.findById(companyId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Công ty không tồn tại"));
+
+        boolean isOwner = companyMemberRepository.existsByCompanyIdAndUserIdAndRoleAndActiveTrue(
+                companyId, userId, CompanyMemberRole.OWNER
+        );
+        if (!isOwner) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không có quyền sửa phúc lợi cho công ty này");
+        }
+
+        companyBenefitRepository.findByIdAndCompanyId(benefitId, companyId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Phúc lợi không tồn tại hoặc không thuộc công ty này"));
+
+        String benefitName = request.getBenefitName().trim();
+        if (companyBenefitRepository.existsByCompanyIdAndBenefitNameAndIdNot(companyId, benefitName, benefitId)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Phúc lợi này đã tồn tại cho công ty");
+        }
+
+        UpdateCompanyBenefitCommand command = UpdateCompanyBenefitCommand.builder()
+                .companyId(companyId)
+                .benefitId(benefitId)
                 .benefitName(benefitName)
                 .build();
 

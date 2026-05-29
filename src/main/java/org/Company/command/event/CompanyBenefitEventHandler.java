@@ -23,4 +23,15 @@ public class CompanyBenefitEventHandler {
                 .build();
         companyBenefitRepository.save(benefit);
     }
+
+    @EventHandler
+    @Transactional
+    public void on(CompanyBenefitUpdatedEvent event) {
+        CompanyBenefit benefit = companyBenefitRepository.findById(event.getBenefitId()).orElse(null);
+        if (benefit == null) {
+            return;
+        }
+        benefit.setBenefitName(event.getBenefitName());
+        companyBenefitRepository.save(benefit);
+    }
 }
