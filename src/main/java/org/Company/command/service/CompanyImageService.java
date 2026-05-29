@@ -6,5 +6,5 @@ import java.util.concurrent.CompletableFuture;
 
 public interface CompanyImageService {
 
-    CompletableFuture<List<String>> uploadImages(String userId, String companyId, MultipartFile[] files, String caption);
+    CompletableFuture<List<String>> uploadImages(String userId, String companyId, MultipartFile[] files, List<String> captions);
 }

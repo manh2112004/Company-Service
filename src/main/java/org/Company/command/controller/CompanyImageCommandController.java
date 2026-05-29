@@ -8,6 +8,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
@@ -27,8 +28,8 @@ public class CompanyImageCommandController {
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable String companyId,
             @RequestPart("files") MultipartFile[] files,
-            @RequestPart(value = "caption", required = false) String caption
+            @RequestParam(value = "captions", required = false) List<String> captions
     ) {
-        return companyImageService.uploadImages(jwt.getSubject(), companyId, files, caption);
+        return companyImageService.uploadImages(jwt.getSubject(), companyId, files, captions);
     }
 }

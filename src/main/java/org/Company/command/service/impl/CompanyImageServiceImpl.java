@@ -36,7 +36,7 @@ public class CompanyImageServiceImpl implements CompanyImageService {
     private Cloudinary cloudinary;
 
     @Override
-    public CompletableFuture<List<String>> uploadImages(String userId, String companyId, MultipartFile[] files, String caption) {
+    public CompletableFuture<List<String>> uploadImages(String userId, String companyId, MultipartFile[] files, List<String> captions) {
         if (userId == null || userId.isBlank()) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Không xác định được user từ token");
         }
@@ -62,8 +62,14 @@ public class CompanyImageServiceImpl implements CompanyImageService {
         }
 
         List<CompletableFuture<String>> futures = new java.util.ArrayList<>();
-        for (MultipartFile file : files) {
+        for (int i = 0; i < files.length; i++) {
+            MultipartFile file = files[i];
             String imageUrl = uploadImageToCloudinary(file, "company-service/images", "Upload ảnh công ty thất bại");
+
+            String caption = null;
+            if (captions != null && i < captions.size()) {
+                caption = captions.get(i);
+            }
 
             AddCompanyImageCommand command = AddCompanyImageCommand.builder()
                     .companyId(companyId)
