@@ -3,9 +3,13 @@ package org.Company.command.service.impl;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import org.Company.command.command.AddCompanyImageCommand;
+import org.Company.command.command.DeleteCompanyImageCommand;
+import org.Company.command.data.CompanyImage;
+import org.Company.command.data.CompanyImageRepository;
 import org.Company.command.data.CompanyMemberRepository;
 import org.Company.command.data.CompanyRepository;
 import org.Company.command.service.CompanyImageService;
+import java.net.URI;
 import org.Company.constant.CompanyMemberRole;
 import org.axonframework.commandhandling.gateway.CommandGateway;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +35,9 @@ public class CompanyImageServiceImpl implements CompanyImageService {
 
     @Autowired
     private CompanyMemberRepository companyMemberRepository;
+
+    @Autowired
+    private CompanyImageRepository companyImageRepository;
 
     @Autowired
     private Cloudinary cloudinary;
@@ -107,6 +114,70 @@ public class CompanyImageServiceImpl implements CompanyImageService {
             return secureUrl.toString();
         } catch (IOException e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, errorMessage, e);
+        }
+    }
+
+    @Override
+    public CompletableFuture<String> deleteImage(String userId, String companyId, String imageId) {
+        if (userId == null || userId.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Không xác định được user từ token");
+        }
+
+        CompanyImage companyImage = companyImageRepository.findByIdAndCompanyId(imageId, companyId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy ảnh của công ty này"));
+
+        boolean isOwner = companyMemberRepository.existsByCompanyIdAndUserIdAndRoleAndActiveTrue(
+                companyId, userId, CompanyMemberRole.OWNER
+        );
+        if (!isOwner) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không có quyền xóa ảnh của công ty này");
+        }
+
+        deleteImageIfPossible(companyImage.getImageUrl(), "Xóa ảnh trên Cloudinary thất bại");
+
+        DeleteCompanyImageCommand command = DeleteCompanyImageCommand.builder()
+                .companyId(companyId)
+                .imageId(imageId)
+                .build();
+
+        return commandGateway.send(command);
+    }
+
+    private void deleteImageIfPossible(String imageUrl, String errorMessage) {
+        String publicId = extractCloudinaryPublicId(imageUrl);
+        if (publicId == null) {
+            return;
+        }
+
+        try {
+            cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap());
+        } catch (IOException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, errorMessage, e);
+        }
+    }
+
+    private String extractCloudinaryPublicId(String imageUrl) {
+        if (imageUrl == null || imageUrl.isBlank()) {
+            return null;
+        }
+
+        try {
+            String path = URI.create(imageUrl).getPath();
+            String marker = "/upload/";
+            int uploadIndex = path.indexOf(marker);
+            if (uploadIndex < 0) {
+                return null;
+            }
+
+            String publicPath = path.substring(uploadIndex + marker.length());
+            publicPath = publicPath.replaceFirst("^v\\d+/", "");
+            int extensionIndex = publicPath.lastIndexOf('.');
+            if (extensionIndex > 0) {
+                publicPath = publicPath.substring(0, extensionIndex);
+            }
+            return publicPath.isBlank() ? null : publicPath;
+        } catch (IllegalArgumentException e) {
+            return null;
         }
     }
 }

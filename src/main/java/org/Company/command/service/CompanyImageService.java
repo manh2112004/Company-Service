@@ -7,4 +7,6 @@ import java.util.concurrent.CompletableFuture;
 public interface CompanyImageService {
 
     CompletableFuture<List<String>> uploadImages(String userId, String companyId, MultipartFile[] files, List<String> captions);
+
+    CompletableFuture<String> deleteImage(String userId, String companyId, String imageId);
 }

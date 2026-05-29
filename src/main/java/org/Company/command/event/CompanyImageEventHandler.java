@@ -24,4 +24,10 @@ public class CompanyImageEventHandler {
                 .build();
         companyImageRepository.save(image);
     }
+
+    @EventHandler
+    @Transactional
+    public void on(CompanyImageDeletedEvent event) {
+        companyImageRepository.deleteById(event.getImageId());
+    }
 }
