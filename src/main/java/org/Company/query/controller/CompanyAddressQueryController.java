@@ -2,6 +2,7 @@ package org.Company.query.controller;
 
 import org.Company.query.model.response.CompanyAddressListResponse;
 import org.Company.query.model.response.CompanyAddressResponse;
+import org.Company.query.queries.GetCompanyAddressByIdQuery;
 import org.Company.query.queries.GetCompanyAddressesQuery;
 import org.axonframework.messaging.responsetypes.ResponseTypes;
 import org.axonframework.queryhandling.QueryGateway;
@@ -29,5 +30,16 @@ public class CompanyAddressQueryController {
                 new GetCompanyAddressesQuery(companyId),
                 ResponseTypes.instanceOf(CompanyAddressListResponse.class)
         ).thenApply(CompanyAddressListResponse::getAddresses);
+    }
+
+    @GetMapping("/{companyId}/addresses/{addressId}")
+    public CompletableFuture<CompanyAddressResponse> getCompanyAddressById(
+            @PathVariable String companyId,
+            @PathVariable String addressId
+    ) {
+        return queryGateway.query(
+                new GetCompanyAddressByIdQuery(companyId, addressId),
+                ResponseTypes.instanceOf(CompanyAddressResponse.class)
+        );
     }
 }

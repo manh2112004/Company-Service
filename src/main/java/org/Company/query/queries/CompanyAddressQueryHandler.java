@@ -38,6 +38,18 @@ public class CompanyAddressQueryHandler {
         return new CompanyAddressListResponse(addresses);
     }
 
+    @QueryHandler
+    @Transactional(readOnly = true)
+    public CompanyAddressResponse handle(GetCompanyAddressByIdQuery query) {
+        companyRepository.findById(query.getCompanyId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Công ty không tồn tại"));
+
+        CompanyAddress address = companyAddressRepository.findByIdAndCompanyId(query.getAddressId(), query.getCompanyId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Địa chỉ không tồn tại"));
+
+        return mapToResponse(address);
+    }
+
     private CompanyAddressResponse mapToResponse(CompanyAddress address) {
         return CompanyAddressResponse.builder()
                 .id(address.getId())
