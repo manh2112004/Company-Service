@@ -38,6 +38,18 @@ public class CompanyMemberQueryHandler {
         return new CompanyMemberListResponse(members);
     }
 
+    @QueryHandler
+    @Transactional(readOnly = true)
+    public CompanyMemberResponse handle(GetCompanyMemberQuery query) {
+        companyRepository.findById(query.getCompanyId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Công ty không tồn tại"));
+
+        CompanyMember member = companyMemberRepository.findByCompanyIdAndId(query.getCompanyId(), query.getMemberId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Thành viên không tồn tại trong công ty"));
+
+        return mapToResponse(member);
+    }
+
     private CompanyMemberResponse mapToResponse(CompanyMember member) {
         return CompanyMemberResponse.builder()
                 .id(member.getId())

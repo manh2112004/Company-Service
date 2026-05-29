@@ -2,6 +2,7 @@ package org.Company.query.controller;
 
 import org.Company.query.model.response.CompanyMemberListResponse;
 import org.Company.query.model.response.CompanyMemberResponse;
+import org.Company.query.queries.GetCompanyMemberQuery;
 import org.Company.query.queries.GetCompanyMembersQuery;
 import org.axonframework.messaging.responsetypes.ResponseTypes;
 import org.axonframework.queryhandling.QueryGateway;
@@ -29,5 +30,16 @@ public class CompanyMemberQueryController {
                 new GetCompanyMembersQuery(companyId),
                 ResponseTypes.instanceOf(CompanyMemberListResponse.class)
         ).thenApply(CompanyMemberListResponse::getMembers);
+    }
+
+    @GetMapping("/{companyId}/members/{memberId}")
+    public CompletableFuture<CompanyMemberResponse> getCompanyMember(
+            @PathVariable String companyId,
+            @PathVariable String memberId
+    ) {
+        return queryGateway.query(
+                new GetCompanyMemberQuery(companyId, memberId),
+                ResponseTypes.instanceOf(CompanyMemberResponse.class)
+        );
     }
 }
