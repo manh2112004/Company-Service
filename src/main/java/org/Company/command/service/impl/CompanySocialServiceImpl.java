@@ -2,6 +2,7 @@ package org.Company.command.service.impl;
 
 import org.Company.command.command.AddCompanySocialCommand;
 import org.Company.command.command.UpdateCompanySocialCommand;
+import org.Company.command.command.DeleteCompanySocialCommand;
 import org.Company.command.data.CompanySocialRepository;
 import org.Company.command.data.CompanyMemberRepository;
 import org.Company.command.data.CompanyRepository;
@@ -91,6 +92,33 @@ public class CompanySocialServiceImpl implements CompanySocialService {
                 .socialId(socialId)
                 .platform(request.getPlatform())
                 .url(request.getUrl().trim())
+                .build();
+
+        return commandGateway.send(command);
+    }
+
+    @Override
+    public CompletableFuture<String> deleteSocial(String userId, String companyId, String socialId) {
+        if (userId == null || userId.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Không xác định được user từ token");
+        }
+
+        companyRepository.findById(companyId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Công ty không tồn tại"));
+
+        boolean isOwner = companyMemberRepository.existsByCompanyIdAndUserIdAndRoleAndActiveTrue(
+                companyId, userId, CompanyMemberRole.OWNER
+        );
+        if (!isOwner) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không có quyền xóa liên kết mạng xã hội cho công ty này");
+        }
+
+        companySocialRepository.findByIdAndCompanyId(socialId, companyId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Liên kết mạng xã hội không tồn tại hoặc không thuộc công ty này"));
+
+        DeleteCompanySocialCommand command = DeleteCompanySocialCommand.builder()
+                .companyId(companyId)
+                .socialId(socialId)
                 .build();
 
         return commandGateway.send(command);

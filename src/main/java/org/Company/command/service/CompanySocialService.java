@@ -10,4 +10,6 @@ public interface CompanySocialService {
     CompletableFuture<String> addSocial(String userId, String companyId, CreateCompanySocialRequest request);
 
     CompletableFuture<String> updateSocial(String userId, String companyId, String socialId, UpdateCompanySocialRequest request);
+
+    CompletableFuture<String> deleteSocial(String userId, String companyId, String socialId);
 }

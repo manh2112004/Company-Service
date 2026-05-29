@@ -36,4 +36,10 @@ public class CompanySocialEventHandler {
         social.setUrl(event.getUrl());
         companySocialRepository.save(social);
     }
+
+    @EventHandler
+    @Transactional
+    public void on(CompanySocialDeletedEvent event) {
+        companySocialRepository.deleteById(event.getSocialId());
+    }
 }
