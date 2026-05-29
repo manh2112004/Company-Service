@@ -2,6 +2,7 @@ package org.Company.command.service.impl;
 
 import org.Company.command.command.AddCompanyAddressCommand;
 import org.Company.command.command.UpdateCompanyAddressCommand;
+import org.Company.command.command.DeleteCompanyAddressCommand;
 import org.Company.command.data.CompanyAddress;
 import org.Company.command.data.CompanyAddressRepository;
 import org.Company.command.data.CompanyMemberRepository;
@@ -102,6 +103,33 @@ public class CompanyAddressServiceImpl implements CompanyAddressService {
                 .ward(trimToNull(request.getWard()))
                 .addressLine(trimToNull(request.getAddressLine()))
                 .headQuarter(Boolean.TRUE.equals(request.getHeadQuarter()))
+                .build();
+
+        return commandGateway.send(command);
+    }
+
+    @Override
+    public CompletableFuture<String> deleteAddress(String userId, String companyId, String addressId) {
+        if (userId == null || userId.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Không xác định được user từ token");
+        }
+
+        companyRepository.findById(companyId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Công ty không tồn tại"));
+
+        boolean isOwner = companyMemberRepository.existsByCompanyIdAndUserIdAndRoleAndActiveTrue(
+                companyId, userId, CompanyMemberRole.OWNER
+        );
+        if (!isOwner) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không có quyền xóa địa chỉ cho công ty này");
+        }
+
+        companyAddressRepository.findByIdAndCompanyId(addressId, companyId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Địa chỉ không tồn tại hoặc không thuộc công ty này"));
+
+        DeleteCompanyAddressCommand command = DeleteCompanyAddressCommand.builder()
+                .companyId(companyId)
+                .addressId(addressId)
                 .build();
 
         return commandGateway.send(command);

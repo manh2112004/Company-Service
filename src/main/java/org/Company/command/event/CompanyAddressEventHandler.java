@@ -44,4 +44,10 @@ public class CompanyAddressEventHandler {
         address.setHeadQuarter(event.getHeadQuarter());
         companyAddressRepository.save(address);
     }
+
+    @EventHandler
+    @Transactional
+    public void on(CompanyAddressDeletedEvent event) {
+        companyAddressRepository.deleteById(event.getAddressId());
+    }
 }

@@ -10,4 +10,6 @@ public interface CompanyAddressService {
     CompletableFuture<String> addAddress(String userId, String companyId, CreateCompanyAddressRequest request);
 
     CompletableFuture<String> updateAddress(String userId, String companyId, String addressId, UpdateCompanyAddressRequest request);
+
+    CompletableFuture<String> deleteAddress(String userId, String companyId, String addressId);
 }
