@@ -23,6 +23,7 @@ import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -277,18 +278,79 @@ public class CompanyServiceImpl implements CompanyService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không có quyền cập nhật công ty này");
         }
 
-        String techStacksJoined = null;
-        if (request.getTechStacks() != null) {
-            techStacksJoined = request.getTechStacks().stream()
+        List<String> techList = new java.util.ArrayList<>();
+        String currentTechStacks = company.getTechStacks();
+        if (currentTechStacks != null && !currentTechStacks.isBlank()) {
+            Arrays.stream(currentTechStacks.split(","))
                     .map(String::trim)
                     .filter(s -> !s.isEmpty())
-                    .collect(Collectors.joining(", "));
-            if (techStacksJoined.isEmpty()) {
-                techStacksJoined = null;
+                    .forEach(techList::add);
+        }
+
+        if (request.getTechStacks() != null) {
+            for (String newTech : request.getTechStacks()) {
+                String trimmedNewTech = newTech.trim();
+                if (!trimmedNewTech.isEmpty()) {
+                    boolean alreadyExists = techList.stream()
+                            .anyMatch(existing -> existing.equalsIgnoreCase(trimmedNewTech));
+                    if (!alreadyExists) {
+                        techList.add(trimmedNewTech);
+                    }
+                }
             }
         }
 
+        String techStacksJoined = techList.stream()
+                .collect(Collectors.joining(", "));
+        if (techStacksJoined.isEmpty()) {
+            techStacksJoined = null;
+        }
+
         AddCompanyTechStacksCommand command = AddCompanyTechStacksCommand.builder()
+                .id(companyId)
+                .techStacks(techStacksJoined)
+                .build();
+
+        return commandGateway.send(command);
+    }
+
+    @Override
+    public CompletableFuture<String> updateCompanyTechStacks(String userId, String companyId, UpdateCompanyTechStacksRequest request) {
+        if (userId == null || userId.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Không xác định được user từ token");
+        }
+
+        Company company = companyRepository.findById(companyId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Công ty không tồn tại"));
+
+        boolean isOwner = companyMemberRepository.existsByCompanyIdAndUserIdAndRoleAndActiveTrue(
+                companyId, userId, CompanyMemberRole.OWNER
+        );
+        if (!isOwner) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không có quyền cập nhật công ty này");
+        }
+
+        List<String> techList = new java.util.ArrayList<>();
+        if (request.getTechStacks() != null) {
+            for (String tech : request.getTechStacks()) {
+                String trimmedTech = tech.trim();
+                if (!trimmedTech.isEmpty()) {
+                    boolean alreadyExists = techList.stream()
+                            .anyMatch(existing -> existing.equalsIgnoreCase(trimmedTech));
+                    if (!alreadyExists) {
+                        techList.add(trimmedTech);
+                    }
+                }
+            }
+        }
+
+        String techStacksJoined = techList.stream()
+                .collect(Collectors.joining(", "));
+        if (techStacksJoined.isEmpty()) {
+            techStacksJoined = null;
+        }
+
+        UpdateCompanyTechStacksCommand command = UpdateCompanyTechStacksCommand.builder()
                 .id(companyId)
                 .techStacks(techStacksJoined)
                 .build();

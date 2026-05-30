@@ -90,4 +90,13 @@ public class CompanyCommandController {
     ) {
         return companyService.addCompanyTechStacks(jwt.getSubject(), companyId, request);
     }
+
+    @PutMapping("/{companyId}/tech-stacks")
+    public CompletableFuture<String> updateCompanyTechStacks(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable String companyId,
+            @Valid @RequestBody UpdateCompanyTechStacksRequest request
+    ) {
+        return companyService.updateCompanyTechStacks(jwt.getSubject(), companyId, request);
+    }
 }

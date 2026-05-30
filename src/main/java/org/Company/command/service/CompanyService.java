@@ -3,6 +3,7 @@ package org.Company.command.service;
 import org.Company.command.model.request.CreateCompanyRequest;
 import org.Company.command.model.request.UpdateCompanyRequest;
 import org.Company.command.model.request.AddCompanyTechStacksRequest;
+import org.Company.command.model.request.UpdateCompanyTechStacksRequest;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -24,4 +25,6 @@ public interface CompanyService {
     CompletableFuture<String> deleteCompanyLogo(Jwt jwt, String companyId);
 
     CompletableFuture<String> addCompanyTechStacks(String userId, String companyId, AddCompanyTechStacksRequest request);
+
+    CompletableFuture<String> updateCompanyTechStacks(String userId, String companyId, UpdateCompanyTechStacksRequest request);
 }

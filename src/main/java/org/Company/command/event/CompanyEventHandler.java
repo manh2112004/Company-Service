@@ -160,4 +160,16 @@ public class CompanyEventHandler {
         company.setUpdatedAt(LocalDateTime.now());
         companyRepository.save(company);
     }
+
+    @EventHandler
+    @Transactional
+    public void on(CompanyTechStacksUpdatedEvent event) {
+        Company company = companyRepository.findById(event.getId()).orElse(null);
+        if (company == null) {
+            return;
+        }
+        company.setTechStacks(event.getTechStacks());
+        company.setUpdatedAt(LocalDateTime.now());
+        companyRepository.save(company);
+    }
 }
