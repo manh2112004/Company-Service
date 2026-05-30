@@ -3,9 +3,11 @@ package org.Company.query.controller;
 import org.Company.query.model.response.CompanyResponse;
 import org.Company.query.model.response.CompanyPageResponse;
 import org.Company.query.model.response.CompanyPublicProfileResponse;
+import org.Company.query.model.response.CompanyTechStacksResponse;
 import org.Company.query.queries.GetCompaniesQuery;
 import org.Company.query.queries.GetCompanyByIdQuery;
 import org.Company.query.queries.GetCompanyPublicProfileQuery;
+import org.Company.query.queries.GetCompanyTechStacksQuery;
 import org.axonframework.messaging.responsetypes.ResponseTypes;
 import org.axonframework.queryhandling.QueryGateway;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,6 +46,13 @@ public class CompanyQueryController {
         return queryGateway.query(
                 new GetCompanyPublicProfileQuery(companyId),
                 ResponseTypes.instanceOf(CompanyPublicProfileResponse.class)
+        );
+    }
+    @GetMapping("/{companyId}/tech-stacks")
+    public CompletableFuture<CompanyTechStacksResponse> getCompanyTechStacks(@PathVariable String companyId) {
+        return queryGateway.query(
+                new GetCompanyTechStacksQuery(companyId),
+                ResponseTypes.instanceOf(CompanyTechStacksResponse.class)
         );
     }
 }

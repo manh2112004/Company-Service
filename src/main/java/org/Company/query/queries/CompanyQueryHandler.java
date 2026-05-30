@@ -247,4 +247,25 @@ public class CompanyQueryHandler {
                 .openPositionsCount(openPositions)
                 .build();
     }
+
+    @QueryHandler
+    @Transactional(readOnly = true)
+    public CompanyTechStacksResponse handle(GetCompanyTechStacksQuery query) {
+        Company company = companyRepository.findById(query.getCompanyId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Công ty không tồn tại"));
+
+        if (company.getStatus() == CompanyStatus.SUSPENDED) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Công ty không tồn tại");
+        }
+
+        List<String> techStacksList = Collections.emptyList();
+        if (company.getTechStacks() != null && !company.getTechStacks().isBlank()) {
+            techStacksList = Arrays.stream(company.getTechStacks().split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .collect(Collectors.toList());
+        }
+
+        return new CompanyTechStacksResponse(techStacksList);
+    }
 }
