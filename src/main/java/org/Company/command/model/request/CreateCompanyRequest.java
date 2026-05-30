@@ -24,4 +24,6 @@ public class CreateCompanyRequest {
     private String email;
     private String phoneNumber;
     private String taxCode;
+    private String techStacks;
+    private Integer openPositionsCount;
 }

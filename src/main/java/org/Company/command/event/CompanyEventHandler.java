@@ -38,6 +38,8 @@ public class CompanyEventHandler {
                 .email(event.getEmail())
                 .phoneNumber(event.getPhoneNumber())
                 .taxCode(event.getTaxCode())
+                .techStacks(event.getTechStacks())
+                .openPositionsCount(event.getOpenPositionsCount())
                 .status(event.getStatus())
                 .verified(event.getVerified())
                 .createdAt(now)
@@ -94,6 +96,12 @@ public class CompanyEventHandler {
         }
         if (event.getTaxCode() != null) {
             company.setTaxCode(event.getTaxCode());
+        }
+        if (event.getTechStacks() != null) {
+            company.setTechStacks(event.getTechStacks());
+        }
+        if (event.getOpenPositionsCount() != null) {
+            company.setOpenPositionsCount(event.getOpenPositionsCount());
         }
 
         company.setUpdatedAt(LocalDateTime.now());

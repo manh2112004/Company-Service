@@ -2,8 +2,10 @@ package org.Company.query.controller;
 
 import org.Company.query.model.response.CompanyResponse;
 import org.Company.query.model.response.CompanyPageResponse;
+import org.Company.query.model.response.CompanyPublicProfileResponse;
 import org.Company.query.queries.GetCompaniesQuery;
 import org.Company.query.queries.GetCompanyByIdQuery;
+import org.Company.query.queries.GetCompanyPublicProfileQuery;
 import org.axonframework.messaging.responsetypes.ResponseTypes;
 import org.axonframework.queryhandling.QueryGateway;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +37,13 @@ public class CompanyQueryController {
         return queryGateway.query(
                 query,
                 ResponseTypes.instanceOf(CompanyPageResponse.class)
+        );
+    }
+    @GetMapping("/{companyId}/public-profile")
+    public CompletableFuture<CompanyPublicProfileResponse> getCompanyPublicProfile(@PathVariable String companyId) {
+        return queryGateway.query(
+                new GetCompanyPublicProfileQuery(companyId),
+                ResponseTypes.instanceOf(CompanyPublicProfileResponse.class)
         );
     }
 }

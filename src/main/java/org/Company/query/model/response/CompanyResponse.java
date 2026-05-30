@@ -26,6 +26,8 @@ public class CompanyResponse {
     private String email;
     private String phoneNumber;
     private String taxCode;
+    private String techStacks;
+    private Integer openPositionsCount;
     private CompanyStatus status;
     private Boolean verified;
     private LocalDateTime createdAt;

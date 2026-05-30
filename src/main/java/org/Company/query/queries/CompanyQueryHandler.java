@@ -1,10 +1,8 @@
 package org.Company.query.queries;
 
-import org.Company.command.data.Company;
-import org.Company.command.data.CompanyRepository;
+import org.Company.command.data.*;
 import org.Company.constant.CompanyStatus;
-import org.Company.query.model.response.CompanyPageResponse;
-import org.Company.query.model.response.CompanyResponse;
+import org.Company.query.model.response.*;
 import org.axonframework.queryhandling.QueryHandler;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -14,16 +12,33 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 public class CompanyQueryHandler {
     @Autowired
     private CompanyRepository companyRepository;
+
+    @Autowired
+    private CompanyAddressRepository companyAddressRepository;
+
+    @Autowired
+    private CompanyBenefitRepository companyBenefitRepository;
+
+    @Autowired
+    private CompanyImageRepository companyImageRepository;
+
+    @Autowired
+    private CompanySocialRepository companySocialRepository;
+
+    @Autowired
+    private CompanyMemberRepository companyMemberRepository;
 
     @QueryHandler
     @Transactional(readOnly = true)
@@ -47,6 +62,8 @@ public class CompanyQueryHandler {
                 .email(company.getEmail())
                 .phoneNumber(company.getPhoneNumber())
                 .taxCode(company.getTaxCode())
+                .techStacks(company.getTechStacks())
+                .openPositionsCount(company.getOpenPositionsCount())
                 .status(company.getStatus())
                 .verified(company.getVerified())
                 .createdAt(company.getCreatedAt())
@@ -119,6 +136,115 @@ public class CompanyQueryHandler {
                 .logoUrl(company.getLogoUrl())
                 .email(company.getEmail())
                 .phoneNumber(company.getPhoneNumber())
+                .techStacks(company.getTechStacks())
+                .openPositionsCount(company.getOpenPositionsCount())
+                .build();
+    }
+
+    @QueryHandler
+    @Transactional(readOnly = true)
+    public CompanyPublicProfileResponse handle(GetCompanyPublicProfileQuery query) {
+        Company company = companyRepository.findById(query.getCompanyId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Công ty không tồn tại"));
+
+        if (company.getStatus() == CompanyStatus.SUSPENDED) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Công ty không tồn tại");
+        }
+
+        CompanyResponse fullResponse = CompanyResponse.builder()
+                .id(company.getId())
+                .companyName(company.getCompanyName())
+                .logoUrl(company.getLogoUrl())
+                .description(company.getDescription())
+                .website(company.getWebsite())
+                .industry(company.getIndustry())
+                .companySize(company.getCompanySize())
+                .foundedYear(company.getFoundedYear())
+                .email(company.getEmail())
+                .phoneNumber(company.getPhoneNumber())
+                .taxCode(company.getTaxCode())
+                .techStacks(company.getTechStacks())
+                .openPositionsCount(company.getOpenPositionsCount())
+                .status(company.getStatus())
+                .verified(company.getVerified())
+                .createdAt(company.getCreatedAt())
+                .updatedAt(company.getUpdatedAt())
+                .build();
+
+        List<CompanySocialResponse> socialLinks = companySocialRepository.findAllByCompanyId(query.getCompanyId())
+                .stream()
+                .map(social -> CompanySocialResponse.builder()
+                        .id(social.getId())
+                        .companyId(social.getCompanyId())
+                        .platform(social.getPlatform())
+                        .url(social.getUrl())
+                        .build())
+                .collect(Collectors.toList());
+
+        List<String> techStacksList = Collections.emptyList();
+        if (company.getTechStacks() != null && !company.getTechStacks().isBlank()) {
+            techStacksList = Arrays.stream(company.getTechStacks().split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .collect(Collectors.toList());
+        }
+
+        List<CompanyAddressResponse> officeLocations = companyAddressRepository.findAllByCompanyId(query.getCompanyId())
+                .stream()
+                .map(addr -> CompanyAddressResponse.builder()
+                        .id(addr.getId())
+                        .companyId(addr.getCompanyId())
+                        .country(addr.getCountry())
+                        .province(addr.getProvince())
+                        .district(addr.getDistrict())
+                        .ward(addr.getWard())
+                        .addressLine(addr.getAddressLine())
+                        .headQuarter(addr.getHeadQuarter())
+                        .build())
+                .collect(Collectors.toList());
+
+        List<CompanyImageResponse> companyImages = companyImageRepository.findAllByCompanyId(query.getCompanyId())
+                .stream()
+                .map(img -> CompanyImageResponse.builder()
+                        .id(img.getId())
+                        .companyId(img.getCompanyId())
+                        .imageUrl(img.getImageUrl())
+                        .caption(img.getCaption())
+                        .build())
+                .collect(Collectors.toList());
+
+        List<CompanyMemberResponse> team = companyMemberRepository.findAllByCompanyId(query.getCompanyId())
+                .stream()
+                .map(m -> CompanyMemberResponse.builder()
+                        .id(m.getId())
+                        .companyId(m.getCompanyId())
+                        .userId(m.getUserId())
+                        .role(m.getRole())
+                        .active(m.getActive())
+                        .build())
+                .collect(Collectors.toList());
+
+        List<CompanyBenefitResponse> benefits = companyBenefitRepository.findAllByCompanyId(query.getCompanyId())
+                .stream()
+                .map(b -> CompanyBenefitResponse.builder()
+                        .id(b.getId())
+                        .companyId(b.getCompanyId())
+                        .benefitName(b.getBenefitName())
+                        .build())
+                .collect(Collectors.toList());
+
+        Integer openPositions = company.getOpenPositionsCount() != null ? company.getOpenPositionsCount() : 0;
+
+        return CompanyPublicProfileResponse.builder()
+                .companyInfo(fullResponse)
+                .description(company.getDescription())
+                .socialLinks(socialLinks)
+                .techStacks(techStacksList)
+                .officeLocations(officeLocations)
+                .companyImages(companyImages)
+                .team(team)
+                .benefits(benefits)
+                .openPositionsCount(openPositions)
                 .build();
     }
 }

@@ -75,6 +75,8 @@ public class CompanyServiceImpl implements CompanyService {
                 .email(trimToNull(request.getEmail()))
                 .phoneNumber(trimToNull(request.getPhoneNumber()))
                 .taxCode(taxCode)
+                .techStacks(trimToNull(request.getTechStacks()))
+                .openPositionsCount(request.getOpenPositionsCount() != null ? request.getOpenPositionsCount() : 0)
                 .status(CompanyStatus.PENDING)
                 .verified(false)
                 .build();
@@ -119,6 +121,8 @@ public class CompanyServiceImpl implements CompanyService {
                 .email(trimToNull(request.getEmail()))
                 .phoneNumber(trimToNull(request.getPhoneNumber()))
                 .taxCode(taxCode)
+                .techStacks(trimToNull(request.getTechStacks()))
+                .openPositionsCount(request.getOpenPositionsCount())
                 .build();
 
         return commandGateway.send(command);

@@ -39,6 +39,11 @@ public class Company {
 
     private String taxCode;
 
+    @Column(length = 2000)
+    private String techStacks;
+
+    private Integer openPositionsCount;
+
     @Enumerated(EnumType.STRING)
     private CompanyStatus status;
 

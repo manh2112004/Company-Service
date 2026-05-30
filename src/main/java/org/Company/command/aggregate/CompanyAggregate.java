@@ -39,6 +39,8 @@ public class CompanyAggregate {
                 .email(command.getEmail())
                 .phoneNumber(command.getPhoneNumber())
                 .taxCode(command.getTaxCode())
+                .techStacks(command.getTechStacks())
+                .openPositionsCount(command.getOpenPositionsCount())
                 .status(command.getStatus())
                 .verified(command.getVerified())
                 .build());
@@ -58,6 +60,8 @@ public class CompanyAggregate {
                 .email(command.getEmail())
                 .phoneNumber(command.getPhoneNumber())
                 .taxCode(command.getTaxCode())
+                .techStacks(command.getTechStacks())
+                .openPositionsCount(command.getOpenPositionsCount())
                 .build());
         return "Cập nhật công ty thành công";
     }
