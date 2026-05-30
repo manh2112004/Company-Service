@@ -358,6 +358,33 @@ public class CompanyServiceImpl implements CompanyService {
         return commandGateway.send(command);
     }
 
+    @Override
+    public CompletableFuture<String> deleteCompanyTechStacks(String userId, String companyId) {
+        if (userId == null || userId.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Không xác định được user từ token");
+        }
+
+        Company company = companyRepository.findById(companyId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Công ty không tồn tại"));
+
+        boolean isOwner = companyMemberRepository.existsByCompanyIdAndUserIdAndRoleAndActiveTrue(
+                companyId, userId, CompanyMemberRole.OWNER
+        );
+        if (!isOwner) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không có quyền cập nhật công ty này");
+        }
+
+        if (company.getTechStacks() == null || company.getTechStacks().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Công ty chưa có tech stack nào để xóa");
+        }
+
+        DeleteCompanyTechStacksCommand command = DeleteCompanyTechStacksCommand.builder()
+                .id(companyId)
+                .build();
+
+        return commandGateway.send(command);
+    }
+
     private String trimToNull(String value) {
         if (value == null) {
             return null;

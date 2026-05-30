@@ -99,4 +99,12 @@ public class CompanyCommandController {
     ) {
         return companyService.updateCompanyTechStacks(jwt.getSubject(), companyId, request);
     }
+
+    @DeleteMapping("/{companyId}/tech-stacks")
+    public CompletableFuture<String> deleteCompanyTechStacks(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable String companyId
+    ) {
+        return companyService.deleteCompanyTechStacks(jwt.getSubject(), companyId);
+    }
 }

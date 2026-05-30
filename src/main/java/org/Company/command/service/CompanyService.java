@@ -27,4 +27,6 @@ public interface CompanyService {
     CompletableFuture<String> addCompanyTechStacks(String userId, String companyId, AddCompanyTechStacksRequest request);
 
     CompletableFuture<String> updateCompanyTechStacks(String userId, String companyId, UpdateCompanyTechStacksRequest request);
+
+    CompletableFuture<String> deleteCompanyTechStacks(String userId, String companyId);
 }
