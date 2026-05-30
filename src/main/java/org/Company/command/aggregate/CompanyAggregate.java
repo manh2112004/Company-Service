@@ -1,15 +1,7 @@
 package org.Company.command.aggregate;
 
-import org.Company.command.command.ApproveCompanyCommand;
-import org.Company.command.command.CreateCompanyCommand;
-import org.Company.command.command.DeleteCompanyCommand;
-import org.Company.command.command.RejectCompanyCommand;
-import org.Company.command.command.UpdateCompanyCommand;
-import org.Company.command.event.CompanyApprovedEvent;
-import org.Company.command.event.CompanyCreatedEvent;
-import org.Company.command.event.CompanyDeletedEvent;
-import org.Company.command.event.CompanyRejectedEvent;
-import org.Company.command.event.CompanyUpdatedEvent;
+import org.Company.command.command.*;
+import org.Company.command.event.*;
 import org.axonframework.commandhandling.CommandHandler;
 import org.axonframework.eventsourcing.EventSourcingHandler;
 import org.axonframework.modelling.command.AggregateIdentifier;
@@ -90,6 +82,15 @@ public class CompanyAggregate {
         return "Từ chối công ty thành công";
     }
 
+    @CommandHandler
+    public String handle(AddCompanyTechStacksCommand command) {
+        AggregateLifecycle.apply(CompanyTechStacksAddedEvent.builder()
+                .id(command.getId())
+                .techStacks(command.getTechStacks())
+                .build());
+        return "Thêm tech stacks thành công";
+    }
+
     @EventSourcingHandler
     public void on(CompanyCreatedEvent event) {
         this.id = event.getId();
@@ -112,6 +113,11 @@ public class CompanyAggregate {
 
     @EventSourcingHandler
     public void on(CompanyRejectedEvent event) {
+        this.id = event.getId();
+    }
+
+    @EventSourcingHandler
+    public void on(CompanyTechStacksAddedEvent event) {
         this.id = event.getId();
     }
 }

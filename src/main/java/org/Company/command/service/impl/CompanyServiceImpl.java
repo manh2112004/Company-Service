@@ -2,16 +2,11 @@ package org.Company.command.service.impl;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
-import org.Company.command.command.ApproveCompanyCommand;
-import org.Company.command.command.CreateCompanyCommand;
-import org.Company.command.command.DeleteCompanyCommand;
-import org.Company.command.command.RejectCompanyCommand;
-import org.Company.command.command.UpdateCompanyCommand;
+import org.Company.command.command.*;
 import org.Company.command.data.Company;
 import org.Company.command.data.CompanyMemberRepository;
 import org.Company.command.data.CompanyRepository;
-import org.Company.command.model.request.CreateCompanyRequest;
-import org.Company.command.model.request.UpdateCompanyRequest;
+import org.Company.command.model.request.*;
 import org.Company.command.service.CompanyService;
 import org.Company.constant.CompanyMemberRole;
 import org.Company.constant.CompanyStatus;
@@ -32,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 @Service
 public class CompanyServiceImpl implements CompanyService {
@@ -263,6 +259,41 @@ public class CompanyServiceImpl implements CompanyService {
         companyRepository.save(company);
 
         return CompletableFuture.completedFuture("Xóa logo công ty thành công");
+    }
+
+    @Override
+    public CompletableFuture<String> addCompanyTechStacks(String userId, String companyId, AddCompanyTechStacksRequest request) {
+        if (userId == null || userId.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Không xác định được user từ token");
+        }
+
+        Company company = companyRepository.findById(companyId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Công ty không tồn tại"));
+
+        boolean isOwner = companyMemberRepository.existsByCompanyIdAndUserIdAndRoleAndActiveTrue(
+                companyId, userId, CompanyMemberRole.OWNER
+        );
+        if (!isOwner) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không có quyền cập nhật công ty này");
+        }
+
+        String techStacksJoined = null;
+        if (request.getTechStacks() != null) {
+            techStacksJoined = request.getTechStacks().stream()
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .collect(Collectors.joining(", "));
+            if (techStacksJoined.isEmpty()) {
+                techStacksJoined = null;
+            }
+        }
+
+        AddCompanyTechStacksCommand command = AddCompanyTechStacksCommand.builder()
+                .id(companyId)
+                .techStacks(techStacksJoined)
+                .build();
+
+        return commandGateway.send(command);
     }
 
     private String trimToNull(String value) {

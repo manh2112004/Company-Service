@@ -1,8 +1,7 @@
 package org.Company.command.controller;
 
 import jakarta.validation.Valid;
-import org.Company.command.model.request.CreateCompanyRequest;
-import org.Company.command.model.request.UpdateCompanyRequest;
+import org.Company.command.model.request.*;
 import org.Company.command.service.CompanyService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -81,5 +80,14 @@ public class CompanyCommandController {
             @PathVariable String companyId
     ) {
         return companyService.deleteCompanyLogo(jwt, companyId);
+    }
+
+    @PostMapping("/{companyId}/tech-stacks")
+    public CompletableFuture<String> addCompanyTechStacks(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable String companyId,
+            @Valid @RequestBody AddCompanyTechStacksRequest request
+    ) {
+        return companyService.addCompanyTechStacks(jwt.getSubject(), companyId, request);
     }
 }
