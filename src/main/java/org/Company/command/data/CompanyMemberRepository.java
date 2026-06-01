@@ -16,5 +16,7 @@ public interface CompanyMemberRepository extends JpaRepository<CompanyMember, St
     Optional<CompanyMember> findByCompanyIdAndId(String companyId, String id);
 
     Optional<CompanyMember> findByCompanyIdAndUserId(String companyId, String userId);
+
+    List<CompanyMember> findAllByUserId(String userId);
 }
 

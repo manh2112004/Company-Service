@@ -3,9 +3,12 @@ package org.Company.query.controller;
 import org.Company.query.model.response.CompanyTeamListResponse;
 import org.Company.query.model.response.CompanyTeamResponse;
 import org.Company.query.queries.GetCompanyTeamsQuery;
+import org.Company.query.queries.GetCompanySettingsTeamQuery;
 import org.axonframework.messaging.responsetypes.ResponseTypes;
 import org.axonframework.queryhandling.QueryGateway;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -27,6 +30,17 @@ public class CompanyTeamQueryController {
     ) {
         return queryGateway.query(
                 new GetCompanyTeamsQuery(companyId),
+                ResponseTypes.instanceOf(CompanyTeamListResponse.class)
+        ).thenApply(CompanyTeamListResponse::getTeams);
+    }
+
+    @GetMapping("/{companyId}/settings/team")
+    public CompletableFuture<List<CompanyTeamResponse>> getCompanySettingsTeam(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable String companyId
+    ) {
+        return queryGateway.query(
+                new GetCompanySettingsTeamQuery(companyId, jwt.getSubject()),
                 ResponseTypes.instanceOf(CompanyTeamListResponse.class)
         ).thenApply(CompanyTeamListResponse::getTeams);
     }
