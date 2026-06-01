@@ -107,4 +107,13 @@ public class CompanyCommandController {
     ) {
         return companyService.deleteCompanyTechStacks(jwt.getSubject(), companyId);
     }
+
+    @PutMapping("/{companyId}/settings/overview")
+    public CompletableFuture<String> updateCompanyOverview(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable String companyId,
+            @RequestBody UpdateCompanyOverviewRequest request
+    ) {
+        return companyService.updateCompanyOverview(jwt.getSubject(), companyId, request);
+    }
 }

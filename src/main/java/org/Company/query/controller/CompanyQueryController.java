@@ -4,13 +4,17 @@ import org.Company.query.model.response.CompanyResponse;
 import org.Company.query.model.response.CompanyPageResponse;
 import org.Company.query.model.response.CompanyPublicProfileResponse;
 import org.Company.query.model.response.CompanyTechStacksResponse;
+import org.Company.query.model.response.CompanyOverviewResponse;
 import org.Company.query.queries.GetCompaniesQuery;
 import org.Company.query.queries.GetCompanyByIdQuery;
 import org.Company.query.queries.GetCompanyPublicProfileQuery;
 import org.Company.query.queries.GetCompanyTechStacksQuery;
+import org.Company.query.queries.GetCompanyOverviewQuery;
 import org.axonframework.messaging.responsetypes.ResponseTypes;
 import org.axonframework.queryhandling.QueryGateway;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.concurrent.CompletableFuture;
@@ -53,6 +57,17 @@ public class CompanyQueryController {
         return queryGateway.query(
                 new GetCompanyTechStacksQuery(companyId),
                 ResponseTypes.instanceOf(CompanyTechStacksResponse.class)
+        );
+    }
+
+    @GetMapping("/{companyId}/settings/overview")
+    public CompletableFuture<CompanyOverviewResponse> getCompanySettingsOverview(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable String companyId
+    ) {
+        return queryGateway.query(
+                new GetCompanyOverviewQuery(companyId, jwt.getSubject()),
+                ResponseTypes.instanceOf(CompanyOverviewResponse.class)
         );
     }
 }

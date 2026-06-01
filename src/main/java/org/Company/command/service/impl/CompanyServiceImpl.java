@@ -6,6 +6,8 @@ import org.Company.command.command.*;
 import org.Company.command.data.Company;
 import org.Company.command.data.CompanyMemberRepository;
 import org.Company.command.data.CompanyRepository;
+import org.Company.command.data.CompanyAddress;
+import org.Company.command.data.CompanyAddressRepository;
 import org.Company.command.model.request.*;
 import org.Company.command.service.CompanyService;
 import org.Company.constant.CompanyMemberRole;
@@ -40,6 +42,9 @@ public class CompanyServiceImpl implements CompanyService {
 
     @Autowired
     private CompanyMemberRepository companyMemberRepository;
+
+    @Autowired
+    private CompanyAddressRepository companyAddressRepository;
 
     @Autowired
     private Cloudinary cloudinary;
@@ -527,5 +532,118 @@ public class CompanyServiceImpl implements CompanyService {
         }
 
         return false;
+    }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional
+    public CompletableFuture<String> updateCompanyOverview(String userId, String companyId, UpdateCompanyOverviewRequest request) {
+        if (userId == null || userId.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Không xác định được user từ token");
+        }
+
+        Company company = companyRepository.findById(companyId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Công ty không tồn tại"));
+
+        boolean isOwner = companyMemberRepository.existsByCompanyIdAndUserIdAndRoleAndActiveTrue(
+                companyId, userId, CompanyMemberRole.OWNER
+        );
+        if (!isOwner) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không có quyền cập nhật công ty này");
+        }
+
+        // Merge fields for partial updates
+        String updatedName = company.getCompanyName();
+        if (request.getCompanyName() != null) {
+            if (request.getCompanyName().isBlank()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tên công ty không được để trống");
+            }
+            updatedName = request.getCompanyName().trim();
+        }
+
+        String updatedLogo = company.getLogoUrl();
+        if (request.getLogo() != null) {
+            updatedLogo = request.getLogo().trim().isEmpty() ? null : request.getLogo().trim();
+        }
+
+        String updatedWebsite = company.getWebsite();
+        if (request.getWebsite() != null) {
+            updatedWebsite = request.getWebsite().trim().isEmpty() ? null : request.getWebsite().trim();
+        }
+
+        Integer updatedCompanySize = company.getCompanySize();
+        if (request.getEmployeeCount() != null) {
+            updatedCompanySize = request.getEmployeeCount();
+        }
+
+        String updatedIndustry = company.getIndustry();
+        if (request.getIndustry() != null) {
+            updatedIndustry = request.getIndustry().trim().isEmpty() ? null : request.getIndustry().trim();
+        }
+
+        String updatedFoundedYear = company.getFoundedYear();
+        if (request.getFoundedDate() != null) {
+            updatedFoundedYear = request.getFoundedDate().trim().isEmpty() ? null : request.getFoundedDate().trim();
+        }
+
+        String updatedDescription = company.getDescription();
+        if (request.getDescription() != null) {
+            updatedDescription = request.getDescription().trim().isEmpty() ? null : request.getDescription().trim();
+        }
+
+        String updatedTechStacks = company.getTechStacks();
+        if (request.getTechStack() != null) {
+            List<String> techList = new java.util.ArrayList<>();
+            for (String tech : request.getTechStack()) {
+                String trimmedTech = tech.trim();
+                if (!trimmedTech.isEmpty()) {
+                    boolean alreadyExists = techList.stream()
+                            .anyMatch(existing -> existing.equalsIgnoreCase(trimmedTech));
+                    if (!alreadyExists) {
+                        techList.add(trimmedTech);
+                    }
+                }
+            }
+            updatedTechStacks = techList.isEmpty() ? null : techList.stream().collect(Collectors.joining(", "));
+        }
+
+        // Handle locations
+        if (request.getLocation() != null) {
+            // Delete all existing addresses
+            List<org.Company.command.data.CompanyAddress> oldAddresses = companyAddressRepository.findAllByCompanyId(companyId);
+            for (org.Company.command.data.CompanyAddress addr : oldAddresses) {
+                commandGateway.send(DeleteCompanyAddressCommand.builder()
+                        .companyId(companyId)
+                        .addressId(addr.getId())
+                        .build());
+            }
+
+            // Insert new ones
+            for (CreateCompanyAddressRequest addrReq : request.getLocation()) {
+                commandGateway.send(AddCompanyAddressCommand.builder()
+                        .companyId(companyId)
+                        .addressId(UUID.randomUUID().toString())
+                        .country(addrReq.getCountry())
+                        .province(trimToNull(addrReq.getProvince()))
+                        .district(trimToNull(addrReq.getDistrict()))
+                        .ward(trimToNull(addrReq.getWard()))
+                        .addressLine(trimToNull(addrReq.getAddressLine()))
+                        .headQuarter(Boolean.TRUE.equals(addrReq.getHeadQuarter()))
+                        .build());
+            }
+        }
+
+        UpdateCompanyCommand command = UpdateCompanyCommand.builder()
+                .id(companyId)
+                .companyName(updatedName)
+                .logoUrl(updatedLogo)
+                .website(updatedWebsite)
+                .companySize(updatedCompanySize)
+                .industry(updatedIndustry)
+                .foundedYear(updatedFoundedYear)
+                .description(updatedDescription)
+                .techStacks(updatedTechStacks)
+                .build();
+
+        return commandGateway.send(command);
     }
 }

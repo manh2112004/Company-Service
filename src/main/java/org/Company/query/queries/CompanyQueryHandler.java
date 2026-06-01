@@ -272,4 +272,58 @@ public class CompanyQueryHandler {
 
         return new CompanyTechStacksResponse(techStacksList);
     }
+
+    @QueryHandler
+    @Transactional(readOnly = true)
+    public CompanyOverviewResponse handle(GetCompanyOverviewQuery query) {
+        if (query.getUserId() == null || query.getUserId().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Không xác định được user từ token");
+        }
+
+        Company company = companyRepository.findById(query.getCompanyId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Công ty không tồn tại"));
+
+        if (company.getStatus() == CompanyStatus.SUSPENDED) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Công ty không tồn tại");
+        }
+
+        boolean isMember = companyMemberRepository.existsByCompanyIdAndUserId(query.getCompanyId(), query.getUserId());
+        if (!isMember) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không có quyền truy cập thông tin công ty này");
+        }
+
+        List<CompanyAddressResponse> officeLocations = companyAddressRepository.findAllByCompanyId(query.getCompanyId())
+                .stream()
+                .map(addr -> CompanyAddressResponse.builder()
+                        .id(addr.getId())
+                        .companyId(addr.getCompanyId())
+                        .country(addr.getCountry())
+                        .province(addr.getProvince())
+                        .district(addr.getDistrict())
+                        .ward(addr.getWard())
+                        .addressLine(addr.getAddressLine())
+                        .headQuarter(addr.getHeadQuarter())
+                        .build())
+                .collect(Collectors.toList());
+
+        List<String> techStacksList = Collections.emptyList();
+        if (company.getTechStacks() != null && !company.getTechStacks().isBlank()) {
+            techStacksList = Arrays.stream(company.getTechStacks().split(","))
+                    .map(String::trim)
+                    .filter(s -> !s.isEmpty())
+                    .collect(Collectors.toList());
+        }
+
+        return CompanyOverviewResponse.builder()
+                .logo(company.getLogoUrl())
+                .companyName(company.getCompanyName())
+                .website(company.getWebsite())
+                .location(officeLocations)
+                .employeeCount(company.getCompanySize())
+                .industry(company.getIndustry())
+                .foundedDate(company.getFoundedYear())
+                .techStack(techStacksList)
+                .description(company.getDescription())
+                .build();
+    }
 }
