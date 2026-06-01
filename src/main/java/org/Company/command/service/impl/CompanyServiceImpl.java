@@ -3,11 +3,7 @@ package org.Company.command.service.impl;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 import org.Company.command.command.*;
-import org.Company.command.data.Company;
-import org.Company.command.data.CompanyMemberRepository;
-import org.Company.command.data.CompanyRepository;
-import org.Company.command.data.CompanyAddress;
-import org.Company.command.data.CompanyAddressRepository;
+import org.Company.command.data.*;
 import org.Company.command.model.request.*;
 import org.Company.command.service.CompanyService;
 import org.Company.constant.CompanyMemberRole;
@@ -45,6 +41,9 @@ public class CompanyServiceImpl implements CompanyService {
 
     @Autowired
     private CompanyAddressRepository companyAddressRepository;
+
+    @Autowired
+    private CompanyTechStackRepository companyTechStackRepository;
 
     @Autowired
     private Cloudinary cloudinary;
@@ -642,6 +641,35 @@ public class CompanyServiceImpl implements CompanyService {
                 .foundedYear(updatedFoundedYear)
                 .description(updatedDescription)
                 .techStacks(updatedTechStacks)
+                .build();
+
+        return commandGateway.send(command);
+    }
+
+    @Override
+    public CompletableFuture<String> deleteCompanyTechStack(String userId, String companyId, String techStackId) {
+        if (userId == null || userId.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Không xác định được user từ token");
+        }
+
+        companyRepository.findById(companyId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Công ty không tồn tại"));
+
+        boolean isOwner = companyMemberRepository.existsByCompanyIdAndUserIdAndRoleAndActiveTrue(
+                companyId, userId, CompanyMemberRole.OWNER
+        );
+        if (!isOwner) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không có quyền xóa tech stack của công ty này");
+        }
+
+        boolean exists = companyTechStackRepository.existsById(techStackId);
+        if (!exists) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Tech stack không tồn tại");
+        }
+
+        DeleteCompanyTechStackCommand command = DeleteCompanyTechStackCommand.builder()
+                .companyId(companyId)
+                .techStackId(techStackId)
                 .build();
 
         return commandGateway.send(command);

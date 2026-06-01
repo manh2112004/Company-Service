@@ -4,6 +4,8 @@ import org.Company.command.data.Company;
 import org.Company.command.data.CompanyMember;
 import org.Company.command.data.CompanyMemberRepository;
 import org.Company.command.data.CompanyRepository;
+import org.Company.command.data.CompanyTechStack;
+import org.Company.command.data.CompanyTechStackRepository;
 import org.Company.constant.CompanyMemberRole;
 import org.Company.constant.CompanyStatus;
 import org.axonframework.eventhandling.EventHandler;
@@ -21,6 +23,9 @@ public class CompanyEventHandler {
 
     @Autowired
     private CompanyMemberRepository companyMemberRepository;
+
+    @Autowired
+    private CompanyTechStackRepository companyTechStackRepository;
 
     @EventHandler
     @Transactional
@@ -46,6 +51,21 @@ public class CompanyEventHandler {
                 .updatedAt(now)
                 .build();
         companyRepository.save(company);
+
+        if (event.getTechStacks() != null && !event.getTechStacks().isBlank()) {
+            String[] techArray = event.getTechStacks().split(",");
+            for (String techName : techArray) {
+                String trimmed = techName.trim();
+                if (!trimmed.isEmpty()) {
+                    CompanyTechStack tech = CompanyTechStack.builder()
+                            .id(UUID.randomUUID().toString())
+                            .companyId(event.getId())
+                            .techStackName(trimmed)
+                            .build();
+                    companyTechStackRepository.save(tech);
+                }
+            }
+        }
 
         if (!companyMemberRepository.existsByCompanyIdAndUserId(event.getId(), event.getOwnerUserId())) {
             CompanyMember owner = CompanyMember.builder()
@@ -99,6 +119,21 @@ public class CompanyEventHandler {
         }
         if (event.getTechStacks() != null) {
             company.setTechStacks(event.getTechStacks());
+            companyTechStackRepository.deleteAllByCompanyId(event.getId());
+            if (!event.getTechStacks().isBlank()) {
+                String[] techArray = event.getTechStacks().split(",");
+                for (String techName : techArray) {
+                    String trimmed = techName.trim();
+                    if (!trimmed.isEmpty()) {
+                        CompanyTechStack tech = CompanyTechStack.builder()
+                                .id(UUID.randomUUID().toString())
+                                .companyId(event.getId())
+                                .techStackName(trimmed)
+                                .build();
+                        companyTechStackRepository.save(tech);
+                    }
+                }
+            }
         }
         if (event.getOpenPositionsCount() != null) {
             company.setOpenPositionsCount(event.getOpenPositionsCount());
@@ -159,6 +194,24 @@ public class CompanyEventHandler {
         company.setTechStacks(event.getTechStacks());
         company.setUpdatedAt(LocalDateTime.now());
         companyRepository.save(company);
+
+        if (event.getTechStacks() != null && !event.getTechStacks().isBlank()) {
+            String[] techArray = event.getTechStacks().split(",");
+            for (String techName : techArray) {
+                String trimmed = techName.trim();
+                if (!trimmed.isEmpty()) {
+                    boolean exists = companyTechStackRepository.existsByCompanyIdAndTechStackNameIgnoreCase(event.getId(), trimmed);
+                    if (!exists) {
+                        CompanyTechStack tech = CompanyTechStack.builder()
+                                .id(UUID.randomUUID().toString())
+                                .companyId(event.getId())
+                                .techStackName(trimmed)
+                                .build();
+                        companyTechStackRepository.save(tech);
+                    }
+                }
+            }
+        }
     }
 
     @EventHandler
@@ -171,6 +224,22 @@ public class CompanyEventHandler {
         company.setTechStacks(event.getTechStacks());
         company.setUpdatedAt(LocalDateTime.now());
         companyRepository.save(company);
+
+        companyTechStackRepository.deleteAllByCompanyId(event.getId());
+        if (event.getTechStacks() != null && !event.getTechStacks().isBlank()) {
+            String[] techArray = event.getTechStacks().split(",");
+            for (String techName : techArray) {
+                String trimmed = techName.trim();
+                if (!trimmed.isEmpty()) {
+                    CompanyTechStack tech = CompanyTechStack.builder()
+                            .id(UUID.randomUUID().toString())
+                            .companyId(event.getId())
+                            .techStackName(trimmed)
+                            .build();
+                    companyTechStackRepository.save(tech);
+                }
+            }
+        }
     }
 
     @EventHandler
@@ -183,5 +252,7 @@ public class CompanyEventHandler {
         company.setTechStacks(null);
         company.setUpdatedAt(LocalDateTime.now());
         companyRepository.save(company);
+
+        companyTechStackRepository.deleteAllByCompanyId(event.getId());
     }
 }

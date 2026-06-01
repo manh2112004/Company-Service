@@ -43,6 +43,9 @@ public class CompanyQueryHandler {
     @Autowired
     private CompanyTeamRepository companyTeamRepository;
 
+    @Autowired
+    private CompanyTechStackRepository companyTechStackRepository;
+
     @QueryHandler
     @Transactional(readOnly = true)
     public CompanyResponse handle(GetCompanyByIdQuery query) {
@@ -184,13 +187,10 @@ public class CompanyQueryHandler {
                         .build())
                 .collect(Collectors.toList());
 
-        List<String> techStacksList = Collections.emptyList();
-        if (company.getTechStacks() != null && !company.getTechStacks().isBlank()) {
-            techStacksList = Arrays.stream(company.getTechStacks().split(","))
-                    .map(String::trim)
-                    .filter(s -> !s.isEmpty())
-                    .collect(Collectors.toList());
-        }
+        List<String> techStacksList = companyTechStackRepository.findAllByCompanyId(query.getCompanyId())
+                .stream()
+                .map(CompanyTechStack::getTechStackName)
+                .collect(Collectors.toList());
 
         List<CompanyAddressResponse> officeLocations = companyAddressRepository.findAllByCompanyId(query.getCompanyId())
                 .stream()
@@ -262,13 +262,10 @@ public class CompanyQueryHandler {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Công ty không tồn tại");
         }
 
-        List<String> techStacksList = Collections.emptyList();
-        if (company.getTechStacks() != null && !company.getTechStacks().isBlank()) {
-            techStacksList = Arrays.stream(company.getTechStacks().split(","))
-                    .map(String::trim)
-                    .filter(s -> !s.isEmpty())
-                    .collect(Collectors.toList());
-        }
+        List<String> techStacksList = companyTechStackRepository.findAllByCompanyId(query.getCompanyId())
+                .stream()
+                .map(CompanyTechStack::getTechStackName)
+                .collect(Collectors.toList());
 
         return new CompanyTechStacksResponse(techStacksList);
     }
@@ -306,13 +303,10 @@ public class CompanyQueryHandler {
                         .build())
                 .collect(Collectors.toList());
 
-        List<String> techStacksList = Collections.emptyList();
-        if (company.getTechStacks() != null && !company.getTechStacks().isBlank()) {
-            techStacksList = Arrays.stream(company.getTechStacks().split(","))
-                    .map(String::trim)
-                    .filter(s -> !s.isEmpty())
-                    .collect(Collectors.toList());
-        }
+        List<String> techStacksList = companyTechStackRepository.findAllByCompanyId(query.getCompanyId())
+                .stream()
+                .map(CompanyTechStack::getTechStackName)
+                .collect(Collectors.toList());
 
         return CompanyOverviewResponse.builder()
                 .logo(company.getLogoUrl())

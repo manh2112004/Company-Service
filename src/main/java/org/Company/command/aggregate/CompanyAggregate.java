@@ -108,6 +108,15 @@ public class CompanyAggregate {
         return "Xóa tech stacks thành công";
     }
 
+    @CommandHandler
+    public String handle(DeleteCompanyTechStackCommand command) {
+        AggregateLifecycle.apply(CompanyTechStackDeletedEvent.builder()
+                .companyId(command.getCompanyId())
+                .techStackId(command.getTechStackId())
+                .build());
+        return "Xóa tech stack thành công";
+    }
+
     @EventSourcingHandler
     public void on(CompanyCreatedEvent event) {
         this.id = event.getId();
