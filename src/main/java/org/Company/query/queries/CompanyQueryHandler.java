@@ -40,6 +40,9 @@ public class CompanyQueryHandler {
     @Autowired
     private CompanyMemberRepository companyMemberRepository;
 
+    @Autowired
+    private CompanyTeamRepository companyTeamRepository;
+
     @QueryHandler
     @Transactional(readOnly = true)
     public CompanyResponse handle(GetCompanyByIdQuery query) {
@@ -213,14 +216,15 @@ public class CompanyQueryHandler {
                         .build())
                 .collect(Collectors.toList());
 
-        List<CompanyMemberResponse> team = companyMemberRepository.findAllByCompanyId(query.getCompanyId())
+        List<CompanyTeamResponse> team = companyTeamRepository.findAllByCompanyId(query.getCompanyId())
                 .stream()
-                .map(m -> CompanyMemberResponse.builder()
+                .map(m -> CompanyTeamResponse.builder()
                         .id(m.getId())
                         .companyId(m.getCompanyId())
-                        .userId(m.getUserId())
-                        .role(m.getRole())
-                        .active(m.getActive())
+                        .name(m.getName())
+                        .position(m.getPosition())
+                        .avatarUrl(m.getAvatarUrl())
+                        .linkedinUrl(m.getLinkedinUrl())
                         .build())
                 .collect(Collectors.toList());
 

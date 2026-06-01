@@ -20,7 +20,7 @@ public class CompanyPublicProfileResponse {
     private List<String> techStacks;
     private List<CompanyAddressResponse> officeLocations;
     private List<CompanyImageResponse> companyImages;
-    private List<CompanyMemberResponse> team;
+    private List<CompanyTeamResponse> team;
     private List<CompanyBenefitResponse> benefits;
     private Integer openPositionsCount;
 }
