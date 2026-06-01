@@ -320,4 +320,51 @@ public class CompanyQueryHandler {
                 .description(company.getDescription())
                 .build();
     }
+
+    @QueryHandler
+    @Transactional(readOnly = true)
+    public CompanyListResponse handle(GetMyCompaniesQuery query) {
+        if (query.getUserId() == null || query.getUserId().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Không xác định được user từ token");
+        }
+        List<CompanyMember> memberships = companyMemberRepository.findAllByUserId(query.getUserId());
+        if (memberships.isEmpty()) {
+            return new CompanyListResponse(Collections.emptyList());
+        }
+        List<String> companyIds = memberships.stream()
+                .filter(m -> Boolean.TRUE.equals(m.getActive()))
+                .map(CompanyMember::getCompanyId)
+                .collect(Collectors.toList());
+        if (companyIds.isEmpty()) {
+            return new CompanyListResponse(Collections.emptyList());
+        }
+        List<CompanyResponse> companies = companyRepository.findAllById(companyIds)
+                .stream()
+                .filter(c -> c.getStatus() != CompanyStatus.SUSPENDED)
+                .map(this::mapToDetailedResponse)
+                .collect(Collectors.toList());
+        return new CompanyListResponse(companies);
+    }
+
+    private CompanyResponse mapToDetailedResponse(Company company) {
+        return CompanyResponse.builder()
+                .id(company.getId())
+                .companyName(company.getCompanyName())
+                .logoUrl(company.getLogoUrl())
+                .description(company.getDescription())
+                .website(company.getWebsite())
+                .industry(company.getIndustry())
+                .companySize(company.getCompanySize())
+                .foundedYear(company.getFoundedYear())
+                .email(company.getEmail())
+                .phoneNumber(company.getPhoneNumber())
+                .taxCode(company.getTaxCode())
+                .techStacks(company.getTechStacks())
+                .openPositionsCount(company.getOpenPositionsCount())
+                .status(company.getStatus())
+                .verified(company.getVerified())
+                .createdAt(company.getCreatedAt())
+                .updatedAt(company.getUpdatedAt())
+                .build();
+    }
 }
