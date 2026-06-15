@@ -3,6 +3,9 @@ package org.Company.command.controller;
 import jakarta.validation.Valid;
 import org.Company.command.model.request.*;
 import org.Company.command.service.CompanyService;
+import org.Company.event.KafkaEvent;
+import org.Company.event.KafkaEventProducer;
+import org.Company.event.KafkaTopic;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -17,6 +20,8 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 @RestController
@@ -24,6 +29,9 @@ import java.util.concurrent.CompletableFuture;
 public class CompanyCommandController {
     @Autowired
     private CompanyService companyService;
+
+    @Autowired
+    private KafkaEventProducer kafkaEventProducer;
 
     @PostMapping
     public CompletableFuture<String> createCompany(
@@ -54,7 +62,19 @@ public class CompanyCommandController {
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable String companyId
     ) {
-        return companyService.approveCompany(jwt, companyId);
+        return companyService.approveCompany(jwt, companyId).thenApply(result -> {
+            kafkaEventProducer.sendEvent(KafkaTopic.COMPANY_EVENTS, KafkaEvent.builder()
+                    .eventId(UUID.randomUUID().toString())
+                    .eventType("CompanyApprovedEvent")
+                    .userId(jwt.getSubject())
+                    .referenceId(companyId)
+                    .referenceType("COMPANY")
+                    .title("Công ty được duyệt")
+                    .message("Yêu cầu đăng ký công ty của bạn đã được phê duyệt.")
+                    .createdAt(LocalDateTime.now())
+                    .build());
+            return result;
+        });
     }
 
     @PutMapping("/{companyId}/reject")
@@ -62,7 +82,19 @@ public class CompanyCommandController {
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable String companyId
     ) {
-        return companyService.rejectCompany(jwt, companyId);
+        return companyService.rejectCompany(jwt, companyId).thenApply(result -> {
+            kafkaEventProducer.sendEvent(KafkaTopic.COMPANY_EVENTS, KafkaEvent.builder()
+                    .eventId(UUID.randomUUID().toString())
+                    .eventType("CompanyRejectedEvent")
+                    .userId(jwt.getSubject())
+                    .referenceId(companyId)
+                    .referenceType("COMPANY")
+                    .title("Công ty bị từ chối")
+                    .message("Yêu cầu đăng ký công ty của bạn đã bị từ chối.")
+                    .createdAt(LocalDateTime.now())
+                    .build());
+            return result;
+        });
     }
 
     @PostMapping(value = "/{companyId}/logo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
