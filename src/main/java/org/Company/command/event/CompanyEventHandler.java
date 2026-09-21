@@ -255,4 +255,21 @@ public class CompanyEventHandler {
 
         companyTechStackRepository.deleteAllByCompanyId(event.getId());
     }
+
+    @EventHandler
+    @Transactional
+    public void on(CompanyStatusUpdatedEvent event) {
+        Company company = companyRepository.findById(event.getId()).orElse(null);
+        if (company == null) {
+            return;
+        }
+        company.setStatus(event.getStatus());
+        if (event.getStatus() == CompanyStatus.ACTIVE) {
+            company.setVerified(true);
+        } else {
+            company.setVerified(false);
+        }
+        company.setUpdatedAt(LocalDateTime.now());
+        companyRepository.save(company);
+    }
 }

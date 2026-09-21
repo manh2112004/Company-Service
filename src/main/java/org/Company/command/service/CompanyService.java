@@ -33,4 +33,6 @@ public interface CompanyService {
     CompletableFuture<String> deleteCompanyTechStack(String userId, String companyId, String techStackId);
 
     CompletableFuture<String> updateCompanyOverview(String userId, String companyId, org.Company.command.model.request.UpdateCompanyOverviewRequest request);
+
+    CompletableFuture<String> updateCompanyStatus(Jwt jwt, String companyId, org.Company.constant.CompanyStatus status);
 }

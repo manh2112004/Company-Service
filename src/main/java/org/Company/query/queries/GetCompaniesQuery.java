@@ -11,4 +11,6 @@ public class GetCompaniesQuery {
     private int size;
     private String keyword;
     private String industry;
+    private Boolean includeSuspended;
 }
+

@@ -674,4 +674,24 @@ public class CompanyServiceImpl implements CompanyService {
 
         return commandGateway.send(command);
     }
+
+    @Override
+    public CompletableFuture<String> updateCompanyStatus(Jwt jwt, String companyId, org.Company.constant.CompanyStatus status) {
+        if (jwt == null || jwt.getSubject() == null || jwt.getSubject().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Không xác định được user từ token");
+        }
+
+        if (!hasAdminRole(jwt)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không có quyền cập nhật trạng thái công ty");
+        }
+
+        Company company = companyRepository.findById(companyId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Công ty không tồn tại"));
+
+        UpdateCompanyStatusCommand cmd = UpdateCompanyStatusCommand.builder()
+                .id(companyId)
+                .status(status)
+                .build();
+        return commandGateway.send(cmd);
+    }
 }

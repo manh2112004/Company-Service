@@ -30,10 +30,37 @@ public class GlobalExceptionHandler {
         if (cause instanceof ResponseStatusException responseStatusException) {
             return handleResponseStatusException(responseStatusException);
         }
+        if (cause instanceof org.axonframework.queryhandling.QueryExecutionException queryExecutionException) {
+            return handleQueryExecutionException(queryExecutionException);
+        }
 
         log.error("Async request failed", ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(buildBody(HttpStatus.INTERNAL_SERVER_ERROR.value(), "Lỗi hệ thống"));
+    }
+
+    @ExceptionHandler(org.axonframework.queryhandling.QueryExecutionException.class)
+    public ResponseEntity<Map<String, Object>> handleQueryExecutionException(org.axonframework.queryhandling.QueryExecutionException ex) {
+        log.warn("Query execution failed: {}", ex.getMessage());
+        String msg = ex.getMessage();
+        HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
+        String reason = "Lỗi hệ thống";
+
+        if (msg != null) {
+            if (msg.contains("404") || msg.contains("NOT_FOUND")) {
+                status = HttpStatus.NOT_FOUND;
+                reason = "Không tìm thấy dữ liệu hoặc đối tượng không tồn tại";
+            } else if (msg.contains("403") || msg.contains("FORBIDDEN")) {
+                status = HttpStatus.FORBIDDEN;
+                reason = "Bạn không có quyền thực hiện hành động này";
+            } else if (msg.contains("400") || msg.contains("BAD_REQUEST")) {
+                status = HttpStatus.BAD_REQUEST;
+                reason = "Dữ liệu yêu cầu không hợp lệ";
+            }
+        }
+
+        return ResponseEntity.status(status)
+                .body(buildBody(status.value(), reason));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

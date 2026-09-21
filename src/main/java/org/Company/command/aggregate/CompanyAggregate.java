@@ -156,4 +156,18 @@ public class CompanyAggregate {
     public void on(CompanyTechStacksDeletedEvent event) {
         this.id = event.getId();
     }
+
+    @CommandHandler
+    public String handle(UpdateCompanyStatusCommand command) {
+        AggregateLifecycle.apply(CompanyStatusUpdatedEvent.builder()
+                .id(command.getId())
+                .status(command.getStatus())
+                .build());
+        return "Cập nhật trạng thái công ty thành công";
+    }
+
+    @EventSourcingHandler
+    public void on(CompanyStatusUpdatedEvent event) {
+        this.id = event.getId();
+    }
 }

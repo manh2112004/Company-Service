@@ -92,12 +92,15 @@ public class CompanyQueryHandler {
                 Sort.by(Sort.Direction.DESC, "id")
         );
 
-        Specification<Company> spec = Specification.where((root, cq, cb) ->
-                cb.or(
-                        cb.isNull(root.get("status")),
-                        cb.notEqual(root.get("status"), CompanyStatus.SUSPENDED)
-                )
-        );
+        Specification<Company> spec = Specification.where((root, cq, cb) -> {
+            if (Boolean.TRUE.equals(query.getIncludeSuspended())) {
+                return cb.conjunction();
+            }
+            return cb.or(
+                    cb.isNull(root.get("status")),
+                    cb.notEqual(root.get("status"), CompanyStatus.SUSPENDED)
+            );
+        });
 
         if (query.getKeyword() != null && !query.getKeyword().isBlank()) {
             String keyword = "%" + query.getKeyword().toLowerCase() + "%";
@@ -144,8 +147,11 @@ public class CompanyQueryHandler {
                 .phoneNumber(company.getPhoneNumber())
                 .techStacks(company.getTechStacks())
                 .openPositionsCount(company.getOpenPositionsCount())
+                .status(company.getStatus())
+                .verified(company.getVerified())
                 .build();
     }
+
 
     @QueryHandler
     @Transactional(readOnly = true)
@@ -340,7 +346,6 @@ public class CompanyQueryHandler {
         }
         List<CompanyResponse> companies = companyRepository.findAllById(companyIds)
                 .stream()
-                .filter(c -> c.getStatus() != CompanyStatus.SUSPENDED)
                 .map(this::mapToDetailedResponse)
                 .collect(Collectors.toList());
         return new CompanyListResponse(companies);

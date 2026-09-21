@@ -40,9 +40,10 @@ public class CompanyQueryController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String keyword,
-            @RequestParam(required = false) String industry
+            @RequestParam(required = false) String industry,
+            @RequestParam(required = false, defaultValue = "false") boolean includeSuspended
     ) {
-        GetCompaniesQuery query = new GetCompaniesQuery(page, size, keyword, industry);
+        GetCompaniesQuery query = new GetCompaniesQuery(page, size, keyword, industry, includeSuspended);
         return queryGateway.query(
                 query,
                 ResponseTypes.instanceOf(CompanyPageResponse.class)

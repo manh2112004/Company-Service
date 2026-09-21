@@ -97,6 +97,41 @@ public class CompanyCommandController {
         });
     }
 
+    @PutMapping("/{companyId}/status")
+    public CompletableFuture<String> updateCompanyStatus(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable String companyId,
+            @RequestParam org.Company.constant.CompanyStatus status
+    ) {
+        return companyService.updateCompanyStatus(jwt, companyId, status).thenApply(result -> {
+            String eventType = "CompanyStatusUpdatedEvent";
+            String title = "Trạng thái công ty thay đổi";
+            String message = "Trạng thái đăng ký công ty của bạn đã được thay đổi thành: " + status;
+            
+            if (status == org.Company.constant.CompanyStatus.ACTIVE) {
+                eventType = "CompanyApprovedEvent";
+                title = "Công ty được duyệt";
+                message = "Yêu cầu đăng ký công ty của bạn đã được phê duyệt.";
+            } else if (status == org.Company.constant.CompanyStatus.REJECTED) {
+                eventType = "CompanyRejectedEvent";
+                title = "Công ty bị từ chối";
+                message = "Yêu cầu đăng ký công ty của bạn đã bị từ chối.";
+            }
+
+            kafkaEventProducer.sendEvent(KafkaTopic.COMPANY_EVENTS, KafkaEvent.builder()
+                    .eventId(UUID.randomUUID().toString())
+                    .eventType(eventType)
+                    .userId(jwt.getSubject())
+                    .referenceId(companyId)
+                    .referenceType("COMPANY")
+                    .title(title)
+                    .message(message)
+                    .createdAt(LocalDateTime.now())
+                    .build());
+            return result;
+        });
+    }
+
     @PostMapping(value = "/{companyId}/logo", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public CompletableFuture<String> uploadCompanyLogo(
             @AuthenticationPrincipal Jwt jwt,
